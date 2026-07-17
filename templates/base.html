@@ -125,11 +125,10 @@
     .btn:hover:not(:disabled) { border-color: var(--accent); }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .btn.step { width: 38px; text-align: center; padding: 7px 0; font-size: 16px; line-height: 1; }
-    .btn.on   { background: rgba(67,181,129,0.18); border-color: var(--good); color: var(--good); }
-    .btn.off  { background: rgba(138,147,163,0.18); border-color: var(--muted); color: var(--muted); }
-    .btn.turbo{ background: rgba(176,125,240,0.18); border-color: var(--turbo); color: var(--turbo); }
-    .btn.away { background: rgba(240,169,59,0.18); border-color: var(--warn); color: var(--warn); }
-    .btn.sleep{ background: rgba(79,157,255,0.18); border-color: var(--accent); color: var(--accent); }
+    /* Uniform "selected" treatment for any toggle button (AC power, etc.):
+       one obvious accent fill, regardless of which state is selected. */
+    .btn.selected { background: var(--accent); border-color: var(--accent); color: #0b1622; }
+    .btn.selected:hover { border-color: var(--accent); }
     .power-group { display: flex; gap: 6px; }
     .power-group .btn { flex: 1; text-align: center; }
     .timer-status { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--warn); }

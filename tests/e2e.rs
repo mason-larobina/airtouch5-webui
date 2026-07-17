@@ -199,7 +199,9 @@ async fn ac_power_toggle_turns_off() {
     capped(async {
         let (addr, _m) = spawn_server().await;
         // AC 0 is On; toggling -> Off. The OFF button should now be the
-        // selected (themed) one and the ON button neutral.
+        // selected (uniform accent) one and the ON button neutral. There is no
+        // per-state color theme anymore -- a single `selected` class marks the
+        // active button.
         let body = client()
             .post(format!("http://{addr}/ac/0/power"))
             .form(&[("power", "toggle")])
@@ -209,13 +211,15 @@ async fn ac_power_toggle_turns_off() {
             .text()
             .await
             .unwrap();
+        // The OFF button is the selected one.
         assert!(
-            body.contains("class=\"btn off\""),
+            body.contains("class=\"btn selected\"\n              hx-post=\"/ac/0/power\" hx-vals='{\"power\":\"off\"}'"),
             "expected the OFF button to be selected, got: {body}"
         );
+        // No power button carries a per-state theme class anymore.
         assert!(
-            !body.contains("class=\"btn on\""),
-            "ON button should be neutral after toggling off, got: {body}"
+            !body.contains("class=\"btn on\"") && !body.contains("class=\"btn off\""),
+            "power buttons should use the uniform `selected` class, got: {body}"
         );
         assert!(
             !body.contains("power-badge"),

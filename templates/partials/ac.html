@@ -10,16 +10,16 @@
   <div class="field">
     <div class="label">Power</div>
     <div class="power-group">
-      <button class="btn{% if ac.power_eq("On") %} on{% endif %}"
+      <button class="btn{% if ac.power_eq("On") %} selected{% endif %}"
               hx-post="/ac/{{ ac.id }}/power" hx-vals='{"power":"on"}'
               hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML">ON</button>
-      <button class="btn{% if ac.power_eq("Off") %} off{% endif %}"
+      <button class="btn{% if ac.power_eq("Off") %} selected{% endif %}"
               hx-post="/ac/{{ ac.id }}/power" hx-vals='{"power":"off"}'
               hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML">OFF</button>
-      <button class="btn{% if ac.power_is_away() %} away{% endif %}"
+      <button class="btn{% if ac.power_is_away() %} selected{% endif %}"
               hx-post="/ac/{{ ac.id }}/power" hx-vals='{"power":"away"}'
               hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML">Away</button>
-      <button class="btn{% if ac.power_eq("Sleep") %} sleep{% endif %}"
+      <button class="btn{% if ac.power_eq("Sleep") %} selected{% endif %}"
               hx-post="/ac/{{ ac.id }}/power" hx-vals='{"power":"sleep"}'
               hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML">Sleep</button>
     </div>
