@@ -2,7 +2,8 @@
 //!
 //! Discovers the AirTouch 5 console on the LAN, exposes its state, and lets you
 //! control AC units and zones from a browser UI built with htmx, live-updated
-//! over SSE (Server-Sent Events). See `DESIGN.md` for the full architecture.
+//! over SSE (Server-Sent Events). See `ARCHITECTURE.md` for the full
+//! architecture.
 //!
 //! # Library layout
 //!

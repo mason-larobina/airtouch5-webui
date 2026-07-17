@@ -4,7 +4,7 @@
 //! `main.rs`), which themselves fall back to the `AIRCON_LISTEN` and
 //! `AIRCON_DISCOVERY_TIMEOUT_MS` env vars (clap's `env` attribute). `log_level`
 //! is sourced from the `AIRCON_LOG`/`RUST_LOG` env var so the tracing filter
-//! stays environment-driven (per DESIGN.md).
+//! stays environment-driven.
 
 use std::net::SocketAddr;
 use std::time::Duration;
