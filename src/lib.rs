@@ -32,8 +32,15 @@ use std::time::Duration;
 
 pub use manager::ManagerHandle;
 
-/// Convenience for the binaries: build the router, bind, and serve with graceful
-/// shutdown (Ctrl-C / SIGTERM / optional `--timeout` deadline).
+/// Convenience for the binaries: build the router, bind, and serve, shutting
+/// down on the first trigger (Ctrl-C / SIGTERM / optional `--timeout`
+/// deadline).
+///
+/// Shutdown is *immediate*, not graceful: the serve future is dropped, which
+/// closes the listener and any in-flight connections. axum's graceful shutdown
+/// would instead wait for in-flight requests to finish, and with SSE streams
+/// (held open for the life of the page) that effectively never happens -- so a
+/// plain Ctrl-C would hang.
 pub async fn serve(manager: ManagerHandle, bind: SocketAddr, timeout: Option<Duration>) {
     let app = web::build_router(manager);
     let listener = tokio::net::TcpListener::bind(bind)
@@ -43,10 +50,12 @@ pub async fn serve(manager: ManagerHandle, bind: SocketAddr, timeout: Option<Dur
     if let Some(t) = timeout {
         tracing::info!("auto-shutdown after {t:?}");
     }
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal(timeout))
-        .await
-        .expect("server error");
+    tokio::select! {
+        res = axum::serve(listener, app) => res.expect("server error"),
+        _ = shutdown_signal(timeout) => {
+            tracing::info!("shutting down now (closing in-flight requests, e.g. SSE)");
+        }
+    }
 }
 
 /// Await a shutdown trigger: Ctrl-C, SIGTERM, or the `--timeout` deadline (if
