@@ -33,7 +33,7 @@ pub fn spawn_mock_controller(initial: Snapshot) -> (ManagerHandle, MockControlle
     let (mutate_tx, mutate_rx) = mpsc::channel::<Mutation>(64);
 
     let handle = tokio::spawn(mock_loop(initial, snapshot_tx, cmd_rx, mutate_rx));
-    let _ = handle;
+    drop(handle);
 
     (
         ManagerHandle {

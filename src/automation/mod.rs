@@ -217,10 +217,10 @@ impl AutomationStore {
         };
         // Ensure the parent directory exists (the XDG default lives under
         // `~/.config/aircon`, which may not exist on a fresh install).
-        if let Some(parent) = path.parent() {
-            if !parent.as_os_str().is_empty() {
-                std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-            }
+        if let Some(parent) = path.parent()
+            && !parent.as_os_str().is_empty()
+        {
+            std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
         }
         let bytes = serde_json::to_vec_pretty(cfg).map_err(|e| e.to_string())?;
         // Atomic-ish: write to a sibling temp file then rename over the target.

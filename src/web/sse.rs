@@ -137,5 +137,5 @@ fn diff_events(prev: &Snapshot, new: &Snapshot) -> Vec<Event> {
 
 /// Build a named SSE event whose data is an HTML fragment.
 fn named(name: &str, html: String) -> Event {
-    Event::default().event(name.to_string()).data(html)
+    Event::default().event(name).data(html)
 }

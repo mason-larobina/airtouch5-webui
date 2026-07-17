@@ -263,7 +263,7 @@ pub(crate) fn fmt_temp(x: f32) -> String {
 
 /// Clamp a setpoint to the protocol's valid range (10.0 - 25.0 C).
 pub(crate) fn clamp_setpoint(x: f32) -> f32 {
-    x.max(10.0).min(25.0)
+    x.clamp(10.0, 25.0)
 }
 
 // ---------------------------------------------------------------------------
@@ -327,7 +327,7 @@ impl StaticInfo {
 
     /// Which AC owns the given zone index, derived from capability zone ranges.
     pub fn ac_for_zone(&self, zone_id: u8) -> Option<u8> {
-        for (_ac_id, cap) in &self.caps {
+        for cap in self.caps.values() {
             if (cap.zone_start_index..cap.zone_start_index + cap.zone_count).contains(&zone_id) {
                 return Some(cap.id);
             }
@@ -631,10 +631,10 @@ impl AcView {
         matches!(self.power(), Some("AwayOff") | Some("AwayOn"))
     }
     pub fn mode_supported(&self, s: &str) -> bool {
-        self.supported_modes.iter().any(|m| *m == s)
+        self.supported_modes.contains(&s)
     }
     pub fn fan_supported(&self, s: &str) -> bool {
-        self.supported_fan_speeds.iter().any(|m| *m == s)
+        self.supported_fan_speeds.contains(&s)
     }
 
     /// Current temperature text for the setpoint row, e.g. "24.3 C".
