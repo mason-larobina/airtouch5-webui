@@ -29,7 +29,7 @@
   <div class="field">
     <div class="label">Mode</div>
     <div class="segmented" role="group" aria-label="ac mode">
-      <button hx-post="/ac/{{ ac.id }}/mode" hx-vals='{"mode":"auto"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.mode_eq("Auto") %} class="active"{% endif %}{% if !ac.mode_supported("Auto") %} disabled{% endif %}>Auto</button>
+      <button hx-post="/ac/{{ ac.id }}/mode" hx-vals='{"mode":"auto"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.mode_is_auto() %} class="active"{% endif %}{% if !ac.mode_supported("Auto") %} disabled{% endif %}>Auto</button>
       <button hx-post="/ac/{{ ac.id }}/mode" hx-vals='{"mode":"heat"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.mode_eq("Heat") %} class="active"{% endif %}{% if !ac.mode_supported("Heat") %} disabled{% endif %}>Heat</button>
       <button hx-post="/ac/{{ ac.id }}/mode" hx-vals='{"mode":"dry"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.mode_eq("Dry") %} class="active"{% endif %}{% if !ac.mode_supported("Dry") %} disabled{% endif %}>Dry</button>
       <button hx-post="/ac/{{ ac.id }}/mode" hx-vals='{"mode":"fan"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.mode_eq("Fan") %} class="active"{% endif %}{% if !ac.mode_supported("Fan") %} disabled{% endif %}>Fan</button>
@@ -43,12 +43,24 @@
     <div class="fan-row">
       <div class="segmented compact" role="group" aria-label="fan speed">
         <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"auto"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Auto") %} class="active"{% endif %}{% if !ac.fan_supported("Auto") %} disabled{% endif %}>Auto</button>
-        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"quiet"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Quiet") %} class="active"{% endif %}{% if !ac.fan_supported("Quiet") %} disabled{% endif %}>Quiet</button>
-        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"low"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Low") %} class="active"{% endif %}{% if !ac.fan_supported("Low") %} disabled{% endif %}>Low</button>
-        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"medium"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Med") %} class="active"{% endif %}{% if !ac.fan_supported("Medium") %} disabled{% endif %}>Med</button>
-        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"high"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("High") %} class="active"{% endif %}{% if !ac.fan_supported("High") %} disabled{% endif %}>High</button>
-        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"powerful"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Power") %} class="active"{% endif %}{% if !ac.fan_supported("Powerful") %} disabled{% endif %}>Power</button>
-        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"turbo"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Turbo") %} class="active"{% endif %}{% if !ac.fan_supported("Turbo") %} disabled{% endif %}>Turbo</button>
+        {% if ac.fan_supported("Quiet") %}
+        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"quiet"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Quiet") %} class="active"{% endif %}>Quiet</button>
+        {% endif %}
+        {% if ac.fan_supported("Low") %}
+        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"low"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Low") %} class="active"{% endif %}>Low</button>
+        {% endif %}
+        {% if ac.fan_supported("Medium") %}
+        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"medium"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Med") %} class="active"{% endif %}>Med</button>
+        {% endif %}
+        {% if ac.fan_supported("High") %}
+        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"high"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("High") %} class="active"{% endif %}>High</button>
+        {% endif %}
+        {% if ac.fan_supported("Powerful") %}
+        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"powerful"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Power") %} class="active"{% endif %}>Power</button>
+        {% endif %}
+        {% if ac.fan_supported("Turbo") %}
+        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"turbo"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Turbo") %} class="active"{% endif %}>Turbo</button>
+        {% endif %}
       </div>
       <button class="int-auto{% if ac.fan_int_auto() %} active{% endif %}"
               title="IntelligentAuto"

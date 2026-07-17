@@ -330,6 +330,124 @@ async fn system_off_keeps_zone_controls_working() {
 }
 
 #[tokio::test]
+async fn ac_hides_unsupported_fan_speeds() {
+    capped(async {
+        let (addr, mock) = spawn_server().await;
+        // AC 0 advertises every fan speed in the sample. Restrict it to a
+        // subset (Auto, Low, High) to mirror a system that does not support
+        // Quiet / Med / Power / Turbo: those must be hidden, not disabled.
+        mock.mutate(|s| {
+            if let Some(ac) = s.acs.get_mut(&0) {
+                ac.supported_fan_speeds = vec!["Auto", "Low", "High"];
+            }
+        })
+        .await;
+
+        let body = client()
+            .get(format!("http://{addr}/partials/acs/0"))
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+
+        // Supported fan speeds must still be rendered as buttons.
+        for supported in ["auto", "low", "high"] {
+            assert!(
+                body.contains(&format!("{{\"fan\":\"{supported}\"}}")),
+                "supported fan speed {supported:?} must be rendered, got: {body}"
+            );
+        }
+
+        // Unsupported fan speeds must be entirely absent (not just disabled).
+        for unsupported in ["quiet", "medium", "powerful", "turbo"] {
+            assert!(
+                !body.contains(&format!("{{\"fan\":\"{unsupported}\"}}")),
+                "unsupported fan speed {unsupported:?} must be hidden, got: {body}"
+            );
+        }
+        // No disabled fan buttons remain (the only `disabled` left, if any,
+        // would be a setpoint stepper when out of range -- none here).
+        let fan_section = body
+            .split_once("aria-label=\"fan speed\"")
+            .expect("fan speed section missing")
+            .1
+            .split_once("Int Auto")
+            .expect("Int Auto marker missing")
+            .0;
+        assert!(
+            !fan_section.contains("disabled"),
+            "fan speed segmented control must contain no disabled buttons, got: {fan_section}"
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn ac_auto_button_selected_for_autoheat_autocool() {
+    capped(async {
+        let (addr, mock) = spawn_server().await;
+        // The console reports Auto mode as one of "Auto", "AutoHeat", or
+        // "AutoCool" (the heat/cool split is the console's own decision; the
+        // controllable mode is just Auto). The single Auto button must read as
+        // selected for all three, and Heat/Cool must NOT be selected.
+        for mode in ["AutoHeat", "AutoCool", "Auto"] {
+            mock.mutate(|s| {
+                if let Some(ac) = s.acs.get_mut(&0) {
+                    if let Some(st) = ac.status.as_mut() {
+                        st.mode = Some(mode);
+                    }
+                }
+            })
+            .await;
+
+            let body = client()
+                .get(format!("http://{addr}/partials/acs/0"))
+                .send()
+                .await
+                .unwrap()
+                .text()
+                .await
+                .unwrap();
+
+            // The Auto mode button is the one whose tag carries
+            // {"mode":"auto"}; it must be marked active.
+            let auto_btn = body
+                .split_once("{\"mode\":\"auto\"}")
+                .expect("auto mode button missing")
+                .1
+                .split_once(">Auto</button>")
+                .expect("auto button closing tag missing")
+                .0;
+            assert!(
+                auto_btn.contains("class=\"active\""),
+                "Auto button must be selected when console reports {mode:?}, got: {auto_btn}"
+            );
+
+            // The Heat and Cool buttons must NOT be selected for any Auto
+            // variant.
+            for other in ["heat", "cool"] {
+                let btn = body
+                    .split_once(&format!("{{\"mode\":\"{other}\"}}"))
+                    .expect("{other} mode button missing")
+                    .1
+                    .split_once(&format!(">{}</button>",
+                        if other == "heat" { "Heat" } else { "Cool" }
+                    ))
+                    .expect("{other} button closing tag missing")
+                    .0;
+                assert!(
+                    !btn.contains("class=\"active\""),
+                    "{other} button must not be selected when console reports {mode:?}, got: {btn}"
+                );
+            }
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn zone_temperature_mode_stores_setpoint() {
     capped(async {
         let (addr, _m) = spawn_server().await;

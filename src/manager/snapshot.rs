@@ -528,6 +528,15 @@ impl AcView {
     pub fn mode_eq(&self, s: &str) -> bool {
         self.mode().is_some_and(|p| p == s)
     }
+    /// True when the AC is in any Auto mode variant. The console reports Auto
+    /// mode as "Auto", "AutoHeat", or "AutoCool" (its current auto decision),
+    /// but the controllable mode is just `Auto` -- the heat/cool split is the
+    /// console's own choice, not something we command. All three should light
+    /// up the single Auto button so it reads as selected whenever Auto is in
+    /// effect.
+    pub fn mode_is_auto(&self) -> bool {
+        matches!(self.mode(), Some("Auto") | Some("AutoHeat") | Some("AutoCool"))
+    }
     pub fn fan_eq(&self, s: &str) -> bool {
         self.fan().is_some_and(|p| p == s)
     }
