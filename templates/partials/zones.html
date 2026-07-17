@@ -14,7 +14,7 @@
               {% if bulk_mode.is_airflow() %} class="active" aria-pressed="true"{% endif %}>%</button>
       <button type="button" data-mode="temperature"
               {% if bulk_mode.is_temperature() %} class="active" aria-pressed="true"{% endif %}
-              {% if !snapshot.bulk_temp_available() %} disabled{% endif %}>Temp</button>
+              {% if !snapshot.bulk_temp_available() %} disabled{% endif %}>°C</button>
     </div>
     <div class="bulk-presets">
       <div class="preset-row preset-airflow">

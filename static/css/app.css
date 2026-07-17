@@ -374,7 +374,6 @@ h1 {
   white-space: nowrap;
 }
 .bulk-bar .bulk-mode {
-  width: 128px;
   flex: none;
   margin-left: auto;
 }

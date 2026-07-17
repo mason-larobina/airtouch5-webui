@@ -197,7 +197,7 @@ async fn zone_airflow_toggle_enabled_without_sensor() {
             .split_once("{\"type\":\"temperature\"}")
             .expect("temperature control-type button missing")
             .1
-            .split_once(">Temp</button>")
+            .split_once(">°C</button>")
             .expect("temp button closing tag missing")
             .0;
         assert!(
@@ -797,7 +797,7 @@ async fn bulk_temp_button_disabled_without_any_sensors() {
                 .await
                 .unwrap();
             // Wait until the snapshot without sensors has propagated.
-            if !b.contains("Temp</button>") || b.contains("disabled") {
+            if !b.contains("°C</button>") || b.contains("disabled") {
                 break b;
             }
             tokio::time::sleep(Duration::from_millis(20)).await;
@@ -807,7 +807,7 @@ async fn bulk_temp_button_disabled_without_any_sensors() {
             .split_once("data-mode=\"temperature\"")
             .expect("bulk temperature toggle missing")
             .1
-            .split_once(">Temp</button>")
+            .split_once(">°C</button>")
             .expect("bulk temp toggle close missing")
             .0;
         assert!(
