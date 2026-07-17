@@ -22,10 +22,17 @@
       --bad: #e25b5b;
       --turbo: #b07df0;
       --radius: 10px;
+      /* Touch-target metrics shared by every button so they are easy to tap
+         on mobile. Bump these two values to resize all buttons at once. */
+      --btn-h: 44px;
+      --btn-step-w: 44px;
       --shadow: 0 1px 3px rgba(0,0,0,0.4);
       --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
     }
     * { box-sizing: border-box; }
+    /* Every interactive button is at least --btn-h tall so it is easy to tap
+       on mobile. Individual rules below tune width / padding / font-size. */
+    button { min-height: var(--btn-h); }
     html, body {
       margin: 0; padding: 0;
       background: var(--bg); color: var(--text);
@@ -61,7 +68,7 @@
     #system .refresh {
       background: var(--panel-3); color: var(--text);
       border: 1px solid var(--border); border-radius: 8px;
-      padding: 8px 14px; font-size: 13px; cursor: pointer;
+      padding: 10px 16px; font-size: 14px; cursor: pointer;
     }
     #system .refresh:hover { border-color: var(--accent); }
     .section-label {
@@ -90,19 +97,19 @@
     }
     .segmented button {
       appearance: none; flex: 1; border: 0; background: transparent;
-      color: var(--muted); font-size: 12px; font-weight: 600;
-      padding: 8px 6px; cursor: pointer; border-right: 1px solid var(--border);
+      color: var(--muted); font-size: 13px; font-weight: 600;
+      padding: 10px 8px; cursor: pointer; border-right: 1px solid var(--border);
     }
     .segmented button:last-child { border-right: 0; }
     .segmented button:hover:not(.active):not(:disabled) { color: var(--text); }
     .segmented button:disabled { opacity: 0.35; cursor: not-allowed; }
-    .segmented.compact button { padding: 7px 4px; font-size: 11px; }
+    .segmented.compact button { padding: 10px 6px; font-size: 12px; }
     .fan-row { display: flex; gap: 8px; align-items: stretch; }
     .fan-row .segmented { flex: 1; min-width: 0; }
     .int-auto {
       appearance: none; border: 1px solid var(--border); background: var(--panel-2);
-      color: var(--muted); border-radius: 8px; padding: 0 12px;
-      font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+      color: var(--muted); border-radius: 8px; padding: 0 14px;
+      font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
     }
     .int-auto:disabled { opacity: 0.4; cursor: not-allowed; }
     .setpoint-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -118,12 +125,12 @@
     }
     .btn {
       appearance: none; border: 1px solid var(--border); background: var(--panel-3);
-      color: var(--text); border-radius: 7px; padding: 7px 12px;
-      font-size: 13px; font-weight: 600; cursor: pointer;
+      color: var(--text); border-radius: 7px; padding: 10px 14px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
     }
     .btn:hover:not(:disabled) { border-color: var(--accent); }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn.step { width: 38px; text-align: center; padding: 7px 0; font-size: 16px; line-height: 1; }
+    .btn.step { width: var(--btn-step-w); text-align: center; padding: 10px 0; font-size: 18px; line-height: 1; }
     /* Consolidated "selected/active" treatment for every toggle button in the
        UI (AC power, AC mode, fan speed, zone control mode): one accent-dim
        fill with full text color and an accent border. The selected look is
@@ -150,10 +157,10 @@
     .ac-card .int-auto,
     .ac-card .btn,
     .ac-card .btn.step {
-      font-size: 14px; font-weight: 600; min-height: 36px; padding: 8px 10px;
+      font-size: 14px; font-weight: 600; min-height: var(--btn-h); padding: 10px 12px;
       display: inline-flex; align-items: center; justify-content: center;
     }
-    .ac-card .btn.step { width: 38px; padding: 8px 0; }
+    .ac-card .btn.step { width: var(--btn-step-w); padding: 10px 0; }
     .ac-card .setpoint-row .current .v,
     .ac-card .stepper .val,
     .ac-card .timer-status { font-size: 18px; }
@@ -167,12 +174,17 @@
        all rows line up like a table. */
     .zone-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 88px 112px 38px 64px 38px;
+      grid-template-columns: minmax(0, 1fr) 88px 112px var(--btn-step-w) 64px var(--btn-step-w);
       align-items: center; gap: 8px; padding: 12px 14px;
       border-bottom: 1px solid var(--border);
     }
     .zone-row:last-child { border-bottom: 0; }
-    .zone-row.off { opacity: 0.8; }
+    /* An off zone is signalled by its hollow power toggle and a muted name.
+       The controls (mode toggle, setpoint stepper) are NOT dimmed so they
+       stay clearly tappable while the zone is off -- tmp/% selection and
+       setpoint adjustment remain possible when the zone (or the system) is
+       off. */
+    .zone-row.off .name { color: var(--muted); }
     /* The control cluster (temp/%, -, setpoint, +) sits in one wrapper that
        flattens into the row grid on desktop (display: contents) so each piece
        becomes its own aligned column, then collapses back to a flex row on
@@ -185,7 +197,7 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .zone-toggle {
-      appearance: none; width: 26px; height: 26px; border-radius: 50%;
+      appearance: none; width: 40px; height: 40px; min-height: 0; border-radius: 50%;
       flex: none; cursor: pointer; border: 2px solid var(--muted);
       background: transparent; padding: 0;
     }
@@ -205,14 +217,14 @@
     }
     .mode-toggle button {
       appearance: none; border: 0; background: transparent; color: var(--muted);
-      font-size: 14px; font-weight: 600; min-height: 36px; padding: 8px 10px;
+      font-size: 14px; font-weight: 600; min-height: var(--btn-h); padding: 10px 12px;
       cursor: pointer; letter-spacing: 0.02em;
       display: inline-flex; align-items: center; justify-content: center;
     }
     .mode-toggle button:hover:not(.active):not(:disabled) { color: var(--text); }
     .mode-toggle button:disabled { opacity: 0.35; cursor: not-allowed; }
     .zone-controls .btn.step {
-      width: 38px; min-height: 36px; padding: 8px 0; font-size: 16px; line-height: 1;
+      width: var(--btn-step-w); min-height: var(--btn-h); padding: 10px 0; font-size: 18px; line-height: 1;
       display: inline-flex; align-items: center; justify-content: center;
     }
     .zone-controls .val {

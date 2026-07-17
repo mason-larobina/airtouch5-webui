@@ -203,6 +203,133 @@ async fn zone_airflow_toggle_enabled_without_sensor() {
 }
 
 #[tokio::test]
+async fn zone_off_with_sensor_keeps_controls_enabled() {
+    capped(async {
+        let (addr, mock) = spawn_server().await;
+        // Living Room (zone 0) has a sensor and is in temperature mode. Turn
+        // the zone OFF at the wall console: the tmp/% selection and setpoint
+        // stepper must stay enabled and functional while the zone is off.
+        mock.mutate(|s| {
+            if let Some(z) = s.zones.get_mut(&0) {
+                z.power = ZonePowerView::Off;
+            }
+        })
+        .await;
+
+        // The mutation is applied on the mock task, so poll the partial until
+        // the row is marked off (bounded by the per-test hard timeout).
+        let body = loop {
+            let b = client()
+                .get(format!("http://{addr}/partials/zones/0"))
+                .send()
+                .await
+                .unwrap()
+                .text()
+                .await
+                .unwrap();
+            if b.contains("zone-row off") {
+                break b;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        };
+
+        // A zone that is off but has a sensor must render NO disabled controls:
+        // the % button, the Temp button, and the +/- stepper all stay enabled.
+        assert!(
+            !body.contains("disabled"),
+            "off zone with a sensor must keep tmp/% and setpoint controls enabled, got: {body}"
+        );
+
+        // Setting the setpoint while the zone is off must succeed.
+        let body = client()
+            .post(format!("http://{addr}/zone/0/setpoint"))
+            .form(&[("temp", "21.5")])
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        assert!(body.contains("21.5"), "setpoint must be settable while zone off, got: {body}");
+
+        // Stepping the setpoint while the zone is off must succeed (21.5 -> 22.5).
+        let body = client()
+            .post(format!("http://{addr}/zone/0/step"))
+            .form(&[("dir", "up")])
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        assert!(
+            body.contains("22.5"),
+            "setpoint stepper must work while zone off, got: {body}"
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn system_off_keeps_zone_controls_working() {
+    capped(async {
+        let (addr, _m) = spawn_server().await;
+        // Turn the AC (system) OFF.
+        let resp = client()
+            .post(format!("http://{addr}/ac/0/power"))
+            .form(&[("power", "off")])
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), reqwest::StatusCode::OK);
+
+        // The AC's OFF button is now the selected one (system is off).
+        let ac_body = client()
+            .get(format!("http://{addr}/partials/acs/0"))
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        assert!(
+            ac_body.contains("class=\"btn selected\"\n              hx-post=\"/ac/0/power\" hx-vals='{\"power\":\"off\"}'"),
+            "expected the AC OFF button selected, got: {ac_body}"
+        );
+
+        // While the system is off, the zone controls must stay enabled.
+        let body = client()
+            .get(format!("http://{addr}/partials/zones/0"))
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        assert!(
+            !body.contains("disabled"),
+            "zone controls must stay enabled when the system (AC) is off, got: {body}"
+        );
+
+        // And setting a zone setpoint while the system is off must succeed.
+        let body = client()
+            .post(format!("http://{addr}/zone/0/setpoint"))
+            .form(&[("temp", "20.5")])
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        assert!(
+            body.contains("20.5"),
+            "zone setpoint must be settable while the system is off, got: {body}"
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn zone_temperature_mode_stores_setpoint() {
     capped(async {
         let (addr, _m) = spawn_server().await;
