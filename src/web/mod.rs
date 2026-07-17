@@ -29,6 +29,9 @@ pub fn build_router(manager: ManagerHandle) -> Router {
         ))
         .service(ServeDir::new("static/vendor"));
 
+    // Site stylesheet served from the static css directory.
+    let css = ServeDir::new("static/css");
+
     Router::new()
         // Pages
         .route("/", get(handlers::pages::index))
@@ -56,6 +59,8 @@ pub fn build_router(manager: ManagerHandle) -> Router {
         .route("/ac/{id}/setpoint", post(handlers::ac::setpoint))
         // Vendor assets (versioned, immutable cache)
         .nest_service("/vendor", vendor)
+        // Stylesheet
+        .nest_service("/css", css)
         // Interaction logging: control actions at info (ip + action + result),
         // everything else at debug. Applied as the outermost layer so its
         // elapsed time covers the whole request.

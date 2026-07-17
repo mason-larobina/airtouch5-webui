@@ -40,6 +40,9 @@ path in its `<script src=...>`. The htmx `sse` extension must load after core
 htmx; fragment swapping over SSE needs `hx-ext="sse"`, `sse-connect`, and
 `sse-swap`.
 
+The site stylesheet `static/css/app.css` is served from `/css` (a plain
+`ServeDir`, no immutable cache) and linked from `base.html`.
+
 ## 2. Module layout
 
 The crate (`src/lib.rs`) exposes:
@@ -78,7 +81,7 @@ Binaries:
 
 Templates (`templates/`, askama, configured via `askama.toml`):
 
-- `base.html` -- `<head>`, the full `<style>` block, htmx + sse script tags.
+- `base.html` -- `<head>`, a `<link>` to `/css/app.css`, htmx + sse script tags.
 - `index.html` -- page shell + SSE bootstrap, includes the partials inline.
 - `partials/connection_state.html` -- `#connection-state` (connected banner).
 - `partials/system.html` -- `#system` (console card + `[refresh]`).

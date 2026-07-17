@@ -1,0 +1,608 @@
+:root {
+  --bg: #0f1115;
+  --panel: #171a21;
+  --panel-2: #1e222b;
+  --panel-3: #262b36;
+  --border: #2c3340;
+  --text: #e7ecf3;
+  --muted: #8a93a3;
+  --accent: #4f9dff;
+  --accent-dim: #2c4a6b;
+  --good: #43b581;
+  --warn: #f0a93b;
+  --bad: #e25b5b;
+  --turbo: #b07df0;
+  --radius: 10px;
+  /* Touch-target metrics shared by every button so they are easy to tap
+     on mobile. Bump these two values to resize all buttons at once. */
+  --btn-h: 44px;
+  --btn-step-w: 44px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --mono:
+    ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas,
+    monospace;
+}
+* {
+  box-sizing: border-box;
+}
+/* Every interactive button is at least --btn-h tall so it is easy to tap
+   on mobile. Individual rules below tune width / padding / font-size. */
+button {
+  min-height: var(--btn-h);
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px 64px;
+}
+h1 {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin: 0 0 16px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+#connection-state {
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--good);
+  color: #07140d;
+  font-weight: 600;
+}
+#connection-state.disconnected {
+  background: var(--bad);
+  color: #1a0707;
+}
+#connection-state .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+}
+#system {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 16px;
+  align-items: center;
+}
+#system .title {
+  font-size: 17px;
+  font-weight: 600;
+}
+#system .console-name {
+  color: var(--accent);
+}
+#system .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+#system .meta span {
+  white-space: nowrap;
+}
+#system .meta b {
+  color: var(--text);
+  font-weight: 600;
+}
+#system .refresh {
+  background: var(--panel-3);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+#system .refresh:hover {
+  border-color: var(--accent);
+}
+.section-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 28px 0 12px;
+}
+.section-label h2 {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+}
+.section-label .count {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+.ac-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ac-card .head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.ac-card .name {
+  font-size: 18px;
+  font-weight: 600;
+}
+.field .label {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.segmented {
+  display: flex;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.segmented button {
+  appearance: none;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 8px;
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+}
+.segmented button:last-child {
+  border-right: 0;
+}
+.segmented button:hover:not(.active):not(:disabled) {
+  color: var(--text);
+}
+.segmented button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.segmented.compact button {
+  padding: 10px 6px;
+  font-size: 12px;
+}
+.fan-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.fan-row .segmented {
+  flex: 1;
+  min-width: 0;
+}
+.int-auto {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.int-auto:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.setpoint-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.setpoint-row .current {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.setpoint-row .current .k {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.setpoint-row .current .v {
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 600;
+}
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stepper .val {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 600;
+  min-width: 56px;
+  text-align: center;
+  color: var(--accent);
+}
+.btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--panel-3);
+  color: var(--text);
+  border-radius: 7px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn.step {
+  width: var(--btn-step-w);
+  text-align: center;
+  padding: 10px 0;
+  font-size: 18px;
+  line-height: 1;
+}
+/* Consolidated "selected/active" treatment for every toggle button in the
+   UI (AC power, AC mode, fan speed, zone control mode): one accent-dim
+   fill with full text color and an accent border. The selected look is
+   now identical whether it is a segmented cell, a power button, or a
+   zone mode toggle -- no more per-widget themes. */
+.segmented button.active,
+.mode-toggle button.active,
+.int-auto.active,
+.btn.selected {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--text);
+}
+.btn.selected:hover {
+  border-color: var(--accent);
+}
+/* Inactive power buttons read as muted, matching the segmented /
+   int-auto inactive text color so the AC section has one text color
+   for unselected controls instead of two. */
+.power-group .btn:not(.selected):not(:disabled) {
+  color: var(--muted);
+}
+.power-group .btn:not(.selected):not(:disabled):hover {
+  color: var(--text);
+}
+.power-group {
+  display: flex;
+  gap: 6px;
+}
+.power-group .btn {
+  flex: 1;
+  text-align: center;
+}
+.ac-card .segmented button,
+.ac-card .segmented.compact button,
+.ac-card .int-auto,
+.ac-card .btn,
+.ac-card .btn.step {
+  font-size: 14px;
+  font-weight: 600;
+  min-height: var(--btn-h);
+  padding: 10px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ac-card .btn.step {
+  width: var(--btn-step-w);
+  padding: 10px 0;
+}
+.ac-card .setpoint-row .current .v,
+.ac-card .stepper .val {
+  font-size: 18px;
+}
+.zone-list {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+/* Bulk "all zones" control bar at the top of the zone list: a label, a
+   temp / % mode toggle that switches every zone, and a row of preset
+   buttons whose values depend on the selected mode (airflow percentages
+   or temperature setpoints). It lives inside #zones so a bulk POST that
+   re-renders the partial swaps it in along with the zone rows. */
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-2);
+}
+.bulk-bar .bulk-label {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.bulk-bar .bulk-mode {
+  width: 128px;
+  flex: none;
+}
+.bulk-bar .bulk-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.bulk-bar .btn.preset {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Zone rows are laid out as a 6-column grid: zone name (fills remaining
+   width, ellipsises on overflow), current temp, temp/% control, [ - ],
+   setpoint value, [ + ]. Every column except the name has a fixed width so
+   all rows line up like a table. */
+.zone-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px 112px var(--btn-step-w) 64px var(
+      --btn-step-w
+    );
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.zone-row:last-child {
+  border-bottom: 0;
+}
+/* An off zone is signalled by its hollow power toggle and a muted name.
+   The controls (mode toggle, setpoint stepper) are NOT dimmed so they
+   stay clearly tappable while the zone is off -- tmp/% selection and
+   setpoint adjustment remain possible when the zone (or the system) is
+   off. */
+.zone-row.off .name {
+  color: var(--muted);
+}
+/* The control cluster (temp/%, -, setpoint, +) sits in one wrapper that
+   flattens into the row grid on desktop (display: contents) so each piece
+   becomes its own aligned column, then collapses back to a flex row on
+   narrow screens. */
+.zone-controls {
+  display: contents;
+}
+.zone-name {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.zone-name .name-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+.zone-name .name {
+  font-size: 14px;
+  font-weight: 600;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.zone-toggle {
+  appearance: none;
+  width: 40px;
+  height: 40px;
+  min-height: 0;
+  border-radius: 50%;
+  flex: none;
+  cursor: pointer;
+  border: 2px solid var(--muted);
+  background: transparent;
+  padding: 0;
+}
+.zone-toggle:hover {
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.zone-toggle.on {
+  background: var(--good);
+  border-color: var(--good);
+  box-shadow: 0 0 8px rgba(67, 181, 129, 0.65);
+}
+.zone-toggle.off {
+  background: transparent;
+  border-color: var(--muted);
+}
+.zone-toggle.turbo {
+  background: var(--turbo);
+  border-color: var(--turbo);
+  box-shadow: 0 0 8px rgba(176, 125, 240, 0.65);
+}
+.zone-temp {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--muted);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.zone-temp.has-sensor {
+  color: var(--text);
+}
+.mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.mode-toggle button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  min-height: var(--btn-h);
+  padding: 10px 12px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.mode-toggle button:hover:not(.active):not(:disabled) {
+  color: var(--text);
+}
+.mode-toggle button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.zone-controls .btn.step {
+  width: var(--btn-step-w);
+  min-height: var(--btn-h);
+  padding: 10px 0;
+  font-size: 18px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.zone-controls .val {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--accent);
+  flex: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.zone-flags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: none;
+}
+.flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 1px 4px;
+  border-radius: 5px;
+  background: var(--panel-3);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.flag.warn {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+.flag.turbo {
+  color: var(--turbo);
+  border-color: var(--turbo);
+}
+.err-line {
+  color: var(--bad);
+  font-size: 12px;
+  font-family: var(--mono);
+}
+footer {
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  text-align: center;
+}
+footer a {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+}
+footer a:hover {
+  color: var(--accent);
+}
+@media (max-width: 560px) {
+  #system {
+    grid-template-columns: 1fr;
+  }
+  .zone-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name temp" "controls controls";
+    row-gap: 8px;
+  }
+  .zone-name {
+    grid-area: name;
+  }
+  .zone-temp {
+    grid-area: temp;
+  }
+  .zone-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+    grid-area: controls;
+  }
+}
