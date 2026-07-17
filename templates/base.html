@@ -94,7 +94,6 @@
       padding: 8px 6px; cursor: pointer; border-right: 1px solid var(--border);
     }
     .segmented button:last-child { border-right: 0; }
-    .segmented button.active { background: var(--accent-dim); color: var(--text); }
     .segmented button:hover:not(.active):not(:disabled) { color: var(--text); }
     .segmented button:disabled { opacity: 0.35; cursor: not-allowed; }
     .segmented.compact button { padding: 7px 4px; font-size: 11px; }
@@ -105,7 +104,7 @@
       color: var(--muted); border-radius: 8px; padding: 0 12px;
       font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
     }
-    .int-auto.active { background: var(--accent-dim); color: var(--text); border-color: var(--accent); }
+    .int-auto:disabled { opacity: 0.4; cursor: not-allowed; }
     .setpoint-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .setpoint-row .current { display: flex; align-items: baseline; gap: 6px; }
     .setpoint-row .current .k {
@@ -125,10 +124,23 @@
     .btn:hover:not(:disabled) { border-color: var(--accent); }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .btn.step { width: 38px; text-align: center; padding: 7px 0; font-size: 16px; line-height: 1; }
-    /* Uniform "selected" treatment for any toggle button (AC power, etc.):
-       one obvious accent fill, regardless of which state is selected. */
-    .btn.selected { background: var(--accent); border-color: var(--accent); color: #0b1622; }
+    /* Consolidated "selected/active" treatment for every toggle button in the
+       UI (AC power, AC mode, fan speed, zone control mode): one accent-dim
+       fill with full text color and an accent border. The selected look is
+       now identical whether it is a segmented cell, a power button, or a
+       zone mode toggle -- no more per-widget themes. */
+    .segmented button.active,
+    .mode-toggle button.active,
+    .int-auto.active,
+    .btn.selected {
+      background: var(--accent-dim); border-color: var(--accent); color: var(--text);
+    }
     .btn.selected:hover { border-color: var(--accent); }
+    /* Inactive power buttons read as muted, matching the segmented /
+       int-auto inactive text color so the AC section has one text color
+       for unselected controls instead of two. */
+    .power-group .btn:not(.selected):not(:disabled) { color: var(--muted); }
+    .power-group .btn:not(.selected):not(:disabled):hover { color: var(--text); }
     .power-group { display: flex; gap: 6px; }
     .power-group .btn { flex: 1; text-align: center; }
     .timer-status { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--warn); }
@@ -149,17 +161,31 @@
       background: var(--panel); border: 1px solid var(--border);
       border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
     }
+    /* Zone rows are laid out as a 6-column grid: zone name (fills remaining
+       width, ellipsises on overflow), current temp, temp/% control, [ - ],
+       setpoint value, [ + ]. Every column except the name has a fixed width so
+       all rows line up like a table. */
     .zone-row {
-      display: grid; grid-template-columns: 1fr auto auto auto;
-      align-items: center; gap: 12px; padding: 12px 14px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 88px 112px 38px 64px 38px;
+      align-items: center; gap: 8px; padding: 12px 14px;
       border-bottom: 1px solid var(--border);
     }
     .zone-row:last-child { border-bottom: 0; }
     .zone-row.off { opacity: 0.8; }
-    .zone-name { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
-    .zone-name .name-line { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
+    /* The control cluster (temp/%, -, setpoint, +) sits in one wrapper that
+       flattens into the row grid on desktop (display: contents) so each piece
+       becomes its own aligned column, then collapses back to a flex row on
+       narrow screens. */
+    .zone-controls { display: contents; }
+    .zone-name { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .zone-name .name-line { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: nowrap; }
+    .zone-name .name {
+      font-size: 14px; font-weight: 600; flex: 1 1 auto; min-width: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
     .zone-toggle {
-      appearance: none; width: 22px; height: 22px; border-radius: 50%;
+      appearance: none; width: 26px; height: 26px; border-radius: 50%;
       flex: none; cursor: pointer; border: 2px solid var(--muted);
       background: transparent; padding: 0;
     }
@@ -167,11 +193,10 @@
     .zone-toggle.on    { background: var(--good); border-color: var(--good); box-shadow: 0 0 8px rgba(67,181,129,0.65); }
     .zone-toggle.off   { background: transparent; border-color: var(--muted); }
     .zone-toggle.turbo { background: var(--turbo); border-color: var(--turbo); box-shadow: 0 0 8px rgba(176,125,240,0.65); }
-    .zone-name .name {
-      font-size: 14px; font-weight: 600; overflow: hidden;
-      text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+    .zone-temp {
+      font-family: var(--mono); font-size: 14px; color: var(--muted);
+      text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .zone-temp { font-family: var(--mono); font-size: 14px; color: var(--muted); min-width: 58px; text-align: right; }
     .zone-temp.has-sensor { color: var(--text); }
     .mode-toggle {
       display: grid; grid-template-columns: 1fr 1fr;
@@ -180,13 +205,21 @@
     }
     .mode-toggle button {
       appearance: none; border: 0; background: transparent; color: var(--muted);
-      font-size: 11px; font-weight: 600; padding: 6px 8px; cursor: pointer; letter-spacing: 0.02em;
+      font-size: 14px; font-weight: 600; min-height: 36px; padding: 8px 10px;
+      cursor: pointer; letter-spacing: 0.02em;
+      display: inline-flex; align-items: center; justify-content: center;
     }
-    .mode-toggle button.active { background: var(--accent-dim); color: var(--text); }
+    .mode-toggle button:hover:not(.active):not(:disabled) { color: var(--text); }
     .mode-toggle button:disabled { opacity: 0.35; cursor: not-allowed; }
-    .zone-stepper { display: flex; align-items: center; gap: 4px; }
-    .zone-stepper .val { font-family: var(--mono); font-size: 14px; font-weight: 600; min-width: 50px; text-align: center; color: var(--accent); }
-    .zone-stepper .btn { width: 30px; padding: 6px 0; font-size: 14px; line-height: 1; }
+    .zone-controls .btn.step {
+      width: 38px; min-height: 36px; padding: 8px 0; font-size: 16px; line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .zone-controls .val {
+      font-family: var(--mono); font-size: 16px; font-weight: 600;
+      text-align: center; color: var(--accent); flex: none;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
     .zone-flags { display: inline-flex; flex-wrap: wrap; gap: 6px; flex: none; }
     .flag {
       display: inline-flex; align-items: center; justify-content: center;
@@ -204,14 +237,16 @@
     @media (max-width: 560px) {
       #system { grid-template-columns: 1fr; }
       .zone-row {
-        grid-template-columns: 1fr auto;
-        grid-template-areas: "name temp" "toggle stepper";
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: "name temp" "controls controls";
         row-gap: 8px;
       }
       .zone-name { grid-area: name; }
       .zone-temp { grid-area: temp; }
-      .mode-toggle { grid-area: toggle; }
-      .zone-stepper { grid-area: stepper; justify-self: end; }
+      .zone-controls {
+        display: flex; align-items: center; justify-content: flex-end;
+        flex-wrap: wrap; gap: 8px; grid-area: controls;
+      }
     }
   </style>
 </head>
