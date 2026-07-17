@@ -11,6 +11,9 @@
 //!   `Command`s, watches live status, publishes a `Snapshot` via a `watch`
 //!   channel. [`manager::ManagerHandle`] is the cheaply-cloneable handle the
 //!   web layer renders from and sends controls to.
+//! - [`automation`] -- the background engine that evaluates the two
+//!   hard-coded programs (setpoint auto-off, idle auto-off) on a tick and
+//!   turns ACs off, plus the shared, JSON-persisted config store.
 //! - [`mock`] -- an in-memory controller implementing the same `ManagerHandle`
 //!   contract, for e2e tests and the `aircon-mock` binary (manual UI dev
 //!   without a console).
@@ -22,6 +25,7 @@
 //! that parse CLI args, spawn the appropriate controller, and call [`serve`].
 
 pub mod airtouch;
+pub mod automation;
 pub mod config;
 pub mod manager;
 pub mod mock;
@@ -30,6 +34,8 @@ pub mod web;
 
 use std::net::SocketAddr;
 use std::time::Duration;
+
+use crate::automation::AutomationStore;
 
 pub use manager::ManagerHandle;
 
@@ -42,8 +48,13 @@ pub use manager::ManagerHandle;
 /// would instead wait for in-flight requests to finish, and with SSE streams
 /// (held open for the life of the page) that effectively never happens -- so a
 /// plain Ctrl-C would hang.
-pub async fn serve(manager: ManagerHandle, bind: SocketAddr, timeout: Option<Duration>) {
-    let app = web::build_router(manager);
+pub async fn serve(
+    manager: ManagerHandle,
+    automation: AutomationStore,
+    bind: SocketAddr,
+    timeout: Option<Duration>,
+) {
+    let app = web::build_router(manager, automation);
     let listener = tokio::net::TcpListener::bind(bind)
         .await
         .unwrap_or_else(|e| panic!("failed to bind {bind}: {e}"));

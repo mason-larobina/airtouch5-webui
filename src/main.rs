@@ -5,11 +5,13 @@
 //! (RUST_LOG / AIRCON_LOG); `--bind` and `--discovery-timeout-ms` fall back to
 //! the AIRCON_LISTEN / AIRCON_DISCOVERY_TIMEOUT_MS env vars.
 
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
 use clap::Parser;
 
+use aircon::automation::{self, AutomationStore};
 use aircon::{config::Config, manager::spawn_manager, serve};
 
 /// aircon: AirTouch 5 web UI.
@@ -27,6 +29,21 @@ struct Cli {
     /// Shut the server down after this many seconds (mainly for tests; off by default).
     #[arg(long)]
     timeout: Option<u64>,
+
+    /// Automation engine evaluation tick, in seconds. Set to 0 to disable the
+    /// engine entirely. Default 60 (once per minute).
+    #[arg(long, env = "AIRCON_AUTOMATION_TICK_SECS", default_value = "60")]
+    automation_tick_secs: u64,
+
+    /// Path to the automation config file (enable/disable + parameters).
+    /// Created/updated on change; loaded on startup. Defaults to
+    /// `automation.json` in the current directory.
+    #[arg(
+        long,
+        env = "AIRCON_AUTOMATION_CONFIG",
+        default_value = "automation.json"
+    )]
+    automation_config: PathBuf,
 }
 
 #[tokio::main]
@@ -50,5 +67,22 @@ async fn main() {
     // Spawn the connection manager (discovers + connects in the background).
     let manager = spawn_manager((*config).clone()).await;
 
-    serve(manager, config.listen, cli.timeout.map(Duration::from_secs)).await;
+    // Load the shared automation config (persisted to disk) and spawn the
+    // background engine that evaluates the enabled programs on a tick.
+    let automation = AutomationStore::load(cli.automation_config.clone());
+    if cli.automation_tick_secs > 0 {
+        automation::spawn_automation(
+            manager.clone(),
+            automation.clone(),
+            Duration::from_secs(cli.automation_tick_secs),
+        );
+    }
+
+    serve(
+        manager,
+        automation,
+        config.listen,
+        cli.timeout.map(Duration::from_secs),
+    )
+    .await;
 }

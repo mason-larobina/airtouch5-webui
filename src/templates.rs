@@ -6,6 +6,7 @@
 
 use askama::Template;
 
+use crate::automation::AutomationConfig;
 use crate::manager::snapshot::{AcView, BulkModeView, Snapshot, ZoneView};
 
 #[derive(Template)]
@@ -13,12 +14,14 @@ use crate::manager::snapshot::{AcView, BulkModeView, Snapshot, ZoneView};
 pub struct IndexTemplate<'a> {
     pub snapshot: &'a Snapshot,
     pub bulk_mode: BulkModeView,
+    pub config: &'a AutomationConfig,
 }
 
-pub fn render_index(snapshot: &Snapshot) -> String {
+pub fn render_index(snapshot: &Snapshot, config: &AutomationConfig) -> String {
     IndexTemplate {
         snapshot,
         bulk_mode: snapshot.bulk_mode(),
+        config,
     }
     .render()
     .unwrap_or_default()
@@ -61,6 +64,12 @@ pub struct ZoneTemplate<'a> {
     pub zone: &'a ZoneView,
 }
 
+#[derive(Template)]
+#[template(path = "partials/automation.html")]
+pub struct AutomationTemplate<'a> {
+    pub config: &'a AutomationConfig,
+}
+
 /// Render a fragment to a String for use as an SSE `data:` payload or a POST
 /// response body.
 pub fn render_zone(zone: &ZoneView) -> String {
@@ -76,7 +85,9 @@ pub fn render_system(snapshot: &Snapshot) -> String {
 }
 
 pub fn render_connection_state(snapshot: &Snapshot) -> String {
-    ConnectionStateTemplate { snapshot }.render().unwrap_or_default()
+    ConnectionStateTemplate { snapshot }
+        .render()
+        .unwrap_or_default()
 }
 
 pub fn render_acs(snapshot: &Snapshot) -> String {
@@ -97,4 +108,9 @@ pub fn render_zones_with_bulk(snapshot: &Snapshot, bulk_mode: BulkModeView) -> S
     }
     .render()
     .unwrap_or_default()
+}
+
+/// Render the automation programs configuration partial (`#automation`).
+pub fn render_automation(config: &AutomationConfig) -> String {
+    AutomationTemplate { config }.render().unwrap_or_default()
 }

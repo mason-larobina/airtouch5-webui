@@ -8,15 +8,21 @@
 //! `--bind` falls back to the AIRCON_LISTEN env var; `--timeout` arms an
 //! auto-shutdown deadline.
 
+use std::path::PathBuf;
 use std::time::Duration;
 
 use clap::Parser;
 
+use aircon::automation::{self, AutomationStore};
 use aircon::{mock, serve};
 
 /// aircon-mock: AirTouch 5 web UI against an in-memory mock controller.
 #[derive(Parser, Debug)]
-#[command(name = "aircon-mock", version, about = "AirTouch 5 web UI (mock controller)")]
+#[command(
+    name = "aircon-mock",
+    version,
+    about = "AirTouch 5 web UI (mock controller)"
+)]
 struct Cli {
     /// Address/port to bind the HTTP server (e.g. 127.0.0.1:3000).
     #[arg(long, env = "AIRCON_LISTEN", default_value = "0.0.0.0:3000")]
@@ -25,6 +31,20 @@ struct Cli {
     /// Shut the server down after this many seconds (mainly for tests; off by default).
     #[arg(long)]
     timeout: Option<u64>,
+
+    /// Automation engine evaluation tick, in seconds. Set to 0 to disable the
+    /// engine entirely. Default 60 (once per minute).
+    #[arg(long, env = "AIRCON_AUTOMATION_TICK_SECS", default_value = "60")]
+    automation_tick_secs: u64,
+
+    /// Path to the automation config file (enable/disable + parameters).
+    /// Created/updated on change; loaded on startup.
+    #[arg(
+        long,
+        env = "AIRCON_AUTOMATION_CONFIG",
+        default_value = "automation.json"
+    )]
+    automation_config: PathBuf,
 }
 
 #[tokio::main]
@@ -44,5 +64,23 @@ async fn main() {
     // Spawn the mock controller with the sample (mockup-like) state.
     let (manager, _mock) = mock::spawn_mock_controller(mock::sample_snapshot());
 
-    serve(manager, cli.bind, cli.timeout.map(Duration::from_secs)).await;
+    // Load automation config + spawn the engine. The mock defaults to a
+    // writeable file in the cwd (so the mock UI persists toggles just like the
+    // real binary).
+    let automation = AutomationStore::load(cli.automation_config.clone());
+    if cli.automation_tick_secs > 0 {
+        automation::spawn_automation(
+            manager.clone(),
+            automation.clone(),
+            Duration::from_secs(cli.automation_tick_secs),
+        );
+    }
+
+    serve(
+        manager,
+        automation,
+        cli.bind,
+        cli.timeout.map(Duration::from_secs),
+    )
+    .await;
 }

@@ -31,6 +31,12 @@ conditioning.
 - **Bulk zone control.** An "All zones" bar switches every zone's control mode
   at once and applies preset values across the board (airflow 25/50/75/100% or
   temperature 20/21/22/23 C).
+- **Automation programs.** Two hard-coded programs you can enable, disable, and
+  configure in the UI (below the zones list): **Setpoint auto-off** turns the
+  AC(s) off once every on-zone is in temperature mode and has reached its
+  setpoint (held for 15/30/60 minutes first), and **Idle auto-off** turns the
+  AC(s) off after 15/30/60/120 minutes with no control changes. Settings are
+  persisted to a JSON file and survive restarts.
 - **Two binaries.** `aircon` talks to a real console; `aircon-mock` serves the
   exact same UI against an in-memory mock, handy for trying the interface
   without hardware.
@@ -65,11 +71,13 @@ device on the same network).
 
 #### Command-line options and environment variables
 
-| Option                        | Env var                       | Default        | Meaning                                              |
-| ----------------------------- | ----------------------------- | -------------- | ---------------------------------------------------- |
-| `--bind <addr:port>`          | `AIRCON_LISTEN`               | `0.0.0.0:3000` | Address and port the HTTP server listens on.         |
-| `--discovery-timeout-ms <ms>` | `AIRCON_DISCOVERY_TIMEOUT_MS` | `3000`         | How long UDP discovery waits for a console response. |
-| `--timeout <seconds>`         | (none)                        | off            | Shut down after N seconds (mainly for tests).        |
+| Option                        | Env var                       | Default           | Meaning                                                                     |
+| ----------------------------- | ----------------------------- | ----------------- | --------------------------------------------------------------------------- |
+| `--bind <addr:port>`          | `AIRCON_LISTEN`               | `0.0.0.0:3000`    | Address and port the HTTP server listens on.                                |
+| `--discovery-timeout-ms <ms>` | `AIRCON_DISCOVERY_TIMEOUT_MS` | `3000`            | How long UDP discovery waits for a console response.                        |
+| `--timeout <seconds>`         | (none)                        | off               | Shut down after N seconds (mainly for tests).                               |
+| `--automation-tick-secs <s>`  | `AIRCON_AUTOMATION_TICK_SECS` | `60`              | How often the automation engine evaluates its programs. `0` disables it.    |
+| `--automation-config <path>`  | `AIRCON_AUTOMATION_CONFIG`    | `automation.json` | File the automation enable/parameter settings are saved to and loaded from. |
 
 Logging is environment-driven. Set the tracing filter with `AIRCON_LOG` or
 `RUST_LOG`; the default is `aircon=info,tower_http=info`. Control actions (every
@@ -103,6 +111,9 @@ The page is laid out top to bottom:
   one row per zone. Each row shows the zone name, its sensor reading (or "no
   sensor" / "sensor n/a"), a circular power toggle, a `%` / `Temp` mode switch,
   and a `+` / `-` stepper with the current value.
+- **Automation.** Below the zones list, a card per program with an On/Off
+  enable toggle and a row of parameter presets (hold time / idle timeout).
+  Both programs turn the **AC units** off when they fire.
 
 ### How control works
 
@@ -126,6 +137,28 @@ These come from the AirTouch 5 protocol and are enforced by the server:
 
 Out-of-range or invalid values come back as a short error line in place of the
 control (HTTP 422), so you see the rejection inline.
+
+### Automation programs
+
+Two hard-coded programs run as a background task (one tick per minute by
+default) and turn the **AC units** off when their condition is met. Zones are
+left untouched.
+
+- **Setpoint auto-off** -- armed only when every on-zone is in temperature
+  control mode. It fires when every on-zone's sensor reading has reached its
+  setpoint (cooling satisfied / heating satisfied, decided by the owning AC's
+  mode) and _stays_ that way for the configured hold time (15/30/60 minutes).
+  A brief dip past the setpoint does not trip it.
+- **Idle auto-off** -- fires after the configured timeout (15/30/60/120
+  minutes) with no control changes. "Control changes" are power, mode, fan
+  speed, setpoint, or airflow changes; the live sensor/temperature readings
+  drift continuously and are deliberately ignored so a steady room does not
+  keep the idle timer alive.
+
+Both programs are disabled by default. Enable them and pick presets in the UI;
+settings are saved to the `--automation-config` file (default `automation.json`)
+and reloaded on startup. Away/Sleep AC states are never touched -- only ACs
+that are `On` get turned off.
 
 ## Troubleshooting
 

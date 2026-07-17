@@ -10,8 +10,9 @@ use std::time::Duration;
 
 use futures_util::StreamExt;
 
-use aircon::mock::{self, MockController};
+use aircon::automation::AutomationConfig;
 use aircon::manager::snapshot::{ControlModeView, ZonePowerView};
+use aircon::mock::{self, MockController};
 use aircon::web;
 
 /// Per-test hard timeout. Tests against the mock controller are instant; this is
@@ -21,7 +22,8 @@ const TEST_TIMEOUT: Duration = Duration::from_secs(15);
 /// Spawn the mock controller behind the real router on an ephemeral port.
 async fn spawn_server() -> (SocketAddr, MockController) {
     let (manager, mock_ctrl) = mock::spawn_mock_controller(mock::sample_snapshot());
-    let app = web::build_router(manager);
+    let automation = aircon::automation::AutomationStore::new(AutomationConfig::default());
+    let app = web::build_router(manager, automation);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     tokio::spawn(async move {
@@ -417,7 +419,10 @@ async fn zone_off_with_sensor_keeps_controls_enabled() {
             .text()
             .await
             .unwrap();
-        assert!(body.contains("21.5"), "setpoint must be settable while zone off, got: {body}");
+        assert!(
+            body.contains("21.5"),
+            "setpoint must be settable while zone off, got: {body}"
+        );
 
         // Stepping the setpoint while the zone is off must succeed (21.5 -> 22.5).
         let body = client()
@@ -599,7 +604,8 @@ async fn ac_auto_button_selected_for_autoheat_autocool() {
                     .split_once(&format!("{{\"mode\":\"{other}\"}}"))
                     .expect("{other} mode button missing")
                     .1
-                    .split_once(&format!(">{}</button>",
+                    .split_once(&format!(
+                        ">{}</button>",
                         if other == "heat" { "Heat" } else { "Cool" }
                     ))
                     .expect("{other} button closing tag missing")
@@ -802,7 +808,10 @@ async fn bulk_power_turns_every_zone_on_and_off() {
                 .split_once(&format!("id=\"zone-{id}\""))
                 .unwrap_or_else(|| panic!("zone {id} row missing"))
                 .1;
-            let row = row.split_once("id=\"zone-").map(|(seg, _)| seg).unwrap_or(row);
+            let row = row
+                .split_once("id=\"zone-")
+                .map(|(seg, _)| seg)
+                .unwrap_or(row);
             assert!(
                 row.contains("zone-toggle off"),
                 "zone {id} must be off after bulk off, got: {row}"
@@ -824,7 +833,10 @@ async fn bulk_power_turns_every_zone_on_and_off() {
                 .split_once(&format!("id=\"zone-{id}\""))
                 .unwrap_or_else(|| panic!("zone {id} row missing"))
                 .1;
-            let row = row.split_once("id=\"zone-").map(|(seg, _)| seg).unwrap_or(row);
+            let row = row
+                .split_once("id=\"zone-")
+                .map(|(seg, _)| seg)
+                .unwrap_or(row);
             assert!(
                 !row.contains("zone-toggle off"),
                 "zone {id} must not be off after bulk on, got: {row}"
@@ -857,7 +869,10 @@ async fn bulk_preset_airflow_sets_every_zone() {
                 .unwrap_or_else(|| panic!("zone {id} row missing"))
                 .1;
             // Stop at the next zone row so we only inspect this one.
-            let row = row.split_once("id=\"zone-").map(|(seg, _)| seg).unwrap_or(row);
+            let row = row
+                .split_once("id=\"zone-")
+                .map(|(seg, _)| seg)
+                .unwrap_or(row);
             assert!(
                 row.contains("50%"),
                 "zone {id} must show 50% after bulk airflow preset, got: {row}"
@@ -888,7 +903,10 @@ async fn bulk_preset_temperature_sets_sensor_zones_only() {
                 .split_once(&format!("id=\"zone-{id}\""))
                 .unwrap_or_else(|| panic!("zone {id} row missing"))
                 .1;
-            let row = row.split_once("id=\"zone-").map(|(seg, _)| seg).unwrap_or(row);
+            let row = row
+                .split_once("id=\"zone-")
+                .map(|(seg, _)| seg)
+                .unwrap_or(row);
             assert!(
                 row.contains("22.0"),
                 "sensor zone {id} must show 22.0 C after bulk temp preset, got: {row}"
@@ -924,7 +942,10 @@ async fn bulk_preset_rejects_invalid_value() {
             .text()
             .await
             .unwrap();
-        assert!(body.contains("80%"), "zone 2 must be unchanged, got: {body}");
+        assert!(
+            body.contains("80%"),
+            "zone 2 must be unchanged, got: {body}"
+        );
     })
     .await;
 }
@@ -1279,4 +1300,241 @@ fn parse_sse_event(raw: &[u8]) -> Option<(String, String)> {
         return None;
     }
     Some((event, data))
+}
+
+/// Extract the card for one program from the automation partial body, using the
+/// stable `data-program="..."` attribute as the split anchor (the cards also
+/// have HTML comments that contain the program name, so splitting on the name
+/// alone is ambiguous).
+fn program_card<'a>(body: &'a str, program: &str) -> &'a str {
+    let anchor = format!("data-program=\"{program}\"");
+    body.split(&anchor)
+        .nth(1)
+        .unwrap_or("")
+        .split("program-card")
+        .next()
+        .unwrap_or("")
+}
+
+#[tokio::test]
+async fn index_renders_automation_section() {
+    capped(async {
+        let (addr, _m) = spawn_server().await;
+        let body = client()
+            .get(format!("http://{addr}/"))
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        assert!(body.contains("Automation"), "section label missing");
+        assert!(
+            body.contains("Setpoint auto-off"),
+            "setpoint program missing"
+        );
+        assert!(body.contains("Idle auto-off"), "idle program missing");
+        // Both programs default to disabled: the Off button is the active one.
+        let setpoint = program_card(&body, "setpoint-off");
+        assert!(
+            setpoint.contains("btn off active"),
+            "setpoint program should default to Off: {setpoint}"
+        );
+        let idle = program_card(&body, "idle-off");
+        assert!(
+            idle.contains("btn off active"),
+            "idle program should default to Off: {idle}"
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn automation_partial_get() {
+    capped(async {
+        let (addr, _m) = spawn_server().await;
+        let body = client()
+            .get(format!("http://{addr}/partials/automation"))
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        assert!(body.contains("id=\"automation\""));
+        assert!(body.contains("Setpoint auto-off"));
+        assert!(body.contains("Idle auto-off"));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn toggle_setpoint_off_enables_and_reflects() {
+    capped(async {
+        let (addr, _m) = spawn_server().await;
+        let body = client()
+            .post(format!("http://{addr}/automation/setpoint-off/toggle"))
+            .form(&[("enabled", "true")])
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        let setpoint = program_card(&body, "setpoint-off");
+        // The On button should now be the active one.
+        assert!(
+            setpoint.contains("btn on active"),
+            "On should be active after enabling: {setpoint}"
+        );
+        // The hold presets should now be enabled (not disabled).
+        assert!(
+            setpoint.contains(">15m</button>"),
+            "15m preset present: {setpoint}"
+        );
+        assert!(
+            !setpoint.contains("preset\") disabled"),
+            "presets should be enabled when the program is on: {setpoint}"
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn set_setpoint_off_hold_rejects_unknown_preset() {
+    capped(async {
+        let (addr, _m) = spawn_server().await;
+        let resp = client()
+            .post(format!("http://{addr}/automation/setpoint-off/hold"))
+            .form(&[("mins", "7")])
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(
+            resp.status().as_u16(),
+            422,
+            "unknown hold preset should be rejected"
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn set_idle_off_timeout_persists_value() {
+    capped(async {
+        let (addr, _m) = spawn_server().await;
+        // Enable first so the presets are interactive.
+        let _ = client()
+            .post(format!("http://{addr}/automation/idle-off/toggle"))
+            .form(&[("enabled", "true")])
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        let body = client()
+            .post(format!("http://{addr}/automation/idle-off/timeout"))
+            .form(&[("mins", "120")])
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        let idle = program_card(&body, "idle-off");
+        assert!(idle.contains(">2h</button>"), "2h preset present: {idle}");
+        // The 120-min (2h) preset button should be the active one. The button
+        // markup is `class="btn preset{% if ... == 120 %} active{% endif %}"`,
+        // so the ` active` class appears right before the `hx-vals` for 120.
+        let before_120 = idle.split("mins\":\"120\"").next().unwrap();
+        assert!(
+            before_120
+                .rsplit("btn preset")
+                .next()
+                .unwrap()
+                .contains(" active"),
+            "120-min preset should be active: {idle}"
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn toggle_idle_off_then_disable_resets_active() {
+    capped(async {
+        let (addr, _m) = spawn_server().await;
+        // Enable.
+        let body = client()
+            .post(format!("http://{addr}/automation/idle-off/toggle"))
+            .form(&[("enabled", "true")])
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        assert!(program_card(&body, "idle-off").contains("btn on active"));
+        // Disable again.
+        let body = client()
+            .post(format!("http://{addr}/automation/idle-off/toggle"))
+            .form(&[("enabled", "false")])
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        assert!(
+            program_card(&body, "idle-off").contains("btn off active"),
+            "idle should be Off after disabling"
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn setpoint_hold_preset_marks_active() {
+    capped(async {
+        let (addr, _m) = spawn_server().await;
+        let _ = client()
+            .post(format!("http://{addr}/automation/setpoint-off/toggle"))
+            .form(&[("enabled", "true")])
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        let body = client()
+            .post(format!("http://{addr}/automation/setpoint-off/hold"))
+            .form(&[("mins", "60")])
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        let setpoint = program_card(&body, "setpoint-off");
+        // 1h (60 min) should be active; 15m should not.
+        let before_60 = setpoint.split("mins\":\"60\"").next().unwrap();
+        assert!(
+            before_60
+                .rsplit("btn preset")
+                .next()
+                .unwrap()
+                .contains(" active"),
+            "60-min hold should be active: {setpoint}"
+        );
+        let before_15 = setpoint.split("mins\":\"15\"").next().unwrap();
+        assert!(
+            !before_15
+                .rsplit("btn preset")
+                .next()
+                .unwrap()
+                .contains(" active"),
+            "15-min hold should NOT be active: {setpoint}"
+        );
+    })
+    .await;
 }

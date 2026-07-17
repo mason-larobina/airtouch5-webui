@@ -11,7 +11,8 @@ use crate::web::state::AppState;
 /// `GET /` -- full page shell.
 pub async fn index(State(state): State<AppState>) -> Result<Html<String>, AppError> {
     let snap = state.manager.snapshot_rx.borrow().clone();
-    Ok(Html(templates::render_index(&snap)))
+    let cfg = state.automation.get();
+    Ok(Html(templates::render_index(&snap, &cfg)))
 }
 
 /// `GET /partials/system`.
@@ -43,6 +44,12 @@ pub async fn partial_ac(
 pub async fn partial_zones(State(state): State<AppState>) -> Html<String> {
     let snap = state.manager.snapshot_rx.borrow().clone();
     Html(templates::render_zones(&snap))
+}
+
+/// `GET /partials/automation` -- the automation programs configuration card.
+pub async fn partial_automation(State(state): State<AppState>) -> Html<String> {
+    let cfg = state.automation.get();
+    Html(templates::render_automation(&cfg))
 }
 
 /// `GET /partials/zone/:id`.

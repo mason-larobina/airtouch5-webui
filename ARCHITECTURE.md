@@ -57,16 +57,21 @@ The crate (`src/lib.rs`) exposes:
     setpoint/airflow parsers.
 - `airtouch/mod.rs` -- thin helpers: `discover_with_retry()`,
   `connect_and_prefill()`.
+- `automation/mod.rs` -- the automation engine + shared config store. Two
+  hard-coded programs (setpoint auto-off, idle auto-off) evaluated on a
+  background tick; turns ACs off via `Command::ControlAc`. Config is shared
+  with the web layer and optionally persisted to JSON.
 - `web/` -- the axum layer.
   - `mod.rs` -- `build_router()`, the route table, the vendor `ServeDir` with
     its immutable cache layer, the trace + request-log middleware.
-  - `state.rs` -- `AppState { manager: ManagerHandle }`.
+  - `state.rs` -- `AppState { manager, automation }`.
   - `error.rs` -- `AppError` -> 422 HTML fragment response.
   - `log.rs` -- request-log middleware (control actions at `info`, the rest
     at `debug`).
   - `sse.rs` -- `/events`: the SSE stream with per-id dirty diffing.
   - `handlers/` -- `pages.rs` (`GET /`, `GET /partials/*`, `POST /refresh`),
-    `zone.rs` (`POST /zone/*` and bulk `/zones/*`), `ac.rs` (`POST /ac/*`).
+    `zone.rs` (`POST /zone/*` and bulk `/zones/*`), `ac.rs` (`POST /ac/*`),
+    `automation.rs` (`POST /automation/*`).
 - `mock.rs` -- an in-memory controller implementing the same `ManagerHandle`
   contract, used by `aircon-mock` and the e2e tests.
 - `templates.rs` -- the askama `Template` structs (one per template file) and
@@ -75,9 +80,11 @@ The crate (`src/lib.rs`) exposes:
 
 Binaries:
 
-- `src/main.rs` -- `aircon`: clap CLI, tracing init, `spawn_manager`, `serve`.
+- `src/main.rs` -- `aircon`: clap CLI, tracing init, `spawn_manager`, load the
+  automation store, `spawn_automation`, `serve`.
 - `src/bin/aircon-mock.rs` -- `aircon-mock`: clap CLI, tracing init,
-  `spawn_mock_controller(sample_snapshot())`, `serve`.
+  `spawn_mock_controller(sample_snapshot())`, load the automation store,
+  `spawn_automation`, `serve`.
 
 Templates (`templates/`, askama, configured via `askama.toml`):
 
@@ -90,6 +97,8 @@ Templates (`templates/`, askama, configured via `askama.toml`):
 - `partials/zones.html` -- `#zones` wrapper + the bulk "All zones" bar,
   includes one `zone.html` per zone.
 - `partials/zone.html` -- `#zone-<id>` (one zone row).
+- `partials/automation.html` -- `#automation` (two program cards: enable
+  toggles + parameter presets).
 
 There is no `macros.html`; shared rendering helpers live as methods on the view
 types in `snapshot.rs`.
@@ -331,15 +340,16 @@ over a single SSE stream.
 
 ### 6.1 Pages and partials
 
-| Method | Path                   | Handler                 | Returns                             |
-| ------ | ---------------------- | ----------------------- | ----------------------------------- |
-| GET    | `/`                    | `pages::index`          | `index.html` shell                  |
-| GET    | `/partials/system`     | `pages::partial_system` | `#system`                           |
-| GET    | `/partials/acs`        | `pages::partial_acs`    | `#acs` (all AC cards)               |
-| GET    | `/partials/acs/{id}`   | `pages::partial_ac`     | `#ac-<id>`                          |
-| GET    | `/partials/zones`      | `pages::partial_zones`  | `#zones` (bulk bar + all rows)      |
-| GET    | `/partials/zones/{id}` | `pages::partial_zone`   | `#zone-<id>`                        |
-| POST   | `/refresh`             | `pages::refresh`        | re-pull status, re-render `#system` |
+| Method | Path                   | Handler                     | Returns                             |
+| ------ | ---------------------- | --------------------------- | ----------------------------------- |
+| GET    | `/`                    | `pages::index`              | `index.html` shell                  |
+| GET    | `/partials/system`     | `pages::partial_system`     | `#system`                           |
+| GET    | `/partials/acs`        | `pages::partial_acs`        | `#acs` (all AC cards)               |
+| GET    | `/partials/acs/{id}`   | `pages::partial_ac`         | `#ac-<id>`                          |
+| GET    | `/partials/zones`      | `pages::partial_zones`      | `#zones` (bulk bar + all rows)      |
+| GET    | `/partials/zones/{id}` | `pages::partial_zone`       | `#zone-<id>`                        |
+| GET    | `/partials/automation` | `pages::partial_automation` | `#automation` (both program cards)  |
+| POST   | `/refresh`             | `pages::refresh`            | re-pull status, re-render `#system` |
 
 ### 6.2 SSE
 
@@ -385,20 +395,20 @@ Client wiring (in `index.html`):
 
 ### 6.3 Zone control endpoints
 
-| Method | Path                      | Form field(s)                  | Action                                                     |
-| ------ | ------------------------- | ------------------------------ | ---------------------------------------------------------- |
-| POST   | `/zone/{id}/power`        | `power=on\|off\|turbo\|toggle` | `ZonePower`                                                |
-| POST   | `/zone/{id}/control-type` | `type=airflow\|temperature`    | `SetAirflow(pct)` / `SetTemperature(t)` (temp rejected if `!has_sensor`; absolute value so an off zone is not powered on) |
+| Method | Path                      | Form field(s)                  | Action                                                                                                                                                      |
+| ------ | ------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/zone/{id}/power`        | `power=on\|off\|turbo\|toggle` | `ZonePower`                                                                                                                                                 |
+| POST   | `/zone/{id}/control-type` | `type=airflow\|temperature`    | `SetAirflow(pct)` / `SetTemperature(t)` (temp rejected if `!has_sensor`; absolute value so an off zone is not powered on)                                   |
 | POST   | `/zone/{id}/step`         | `dir=up\|down`                 | `SetAirflow(pct +/-5%)` / `SetTemperature(t +/-1.0 C)` (server-computed absolute value; the relative Increment/Decrement opcode would power an off zone on) |
-| POST   | `/zone/{id}/airflow`      | `pct=0..100`                   | `SetAirflow(pct)`                                          |
-| POST   | `/zone/{id}/setpoint`     | `temp=10.0..25.0`              | `SetTemperature(t)` (also forces Temperature mode)         |
+| POST   | `/zone/{id}/airflow`      | `pct=0..100`                   | `SetAirflow(pct)`                                                                                                                                           |
+| POST   | `/zone/{id}/setpoint`     | `temp=10.0..25.0`              | `SetTemperature(t)` (also forces Temperature mode)                                                                                                          |
 
 Bulk endpoints apply to every zone and re-render the whole `#zones` partial:
 
-| Method | Path                  | Form field(s)                             | Action                                                           |
-| ------ | --------------------- | ----------------------------------------- | ---------------------------------------------------------------- |
-| POST   | `/zones/power`        | `power=on\|off`                          | turn every zone on or off in one shot (skips zones already in that state) |
-| POST   | `/zones/preset`       | `mode=airflow\|temperature` + `value=...` | set every zone to a preset (% to all, temp to sensor zones only) |
+| Method | Path            | Form field(s)                             | Action                                                                    |
+| ------ | --------------- | ----------------------------------------- | ------------------------------------------------------------------------- |
+| POST   | `/zones/power`  | `power=on\|off`                           | turn every zone on or off in one shot (skips zones already in that state) |
+| POST   | `/zones/preset` | `mode=airflow\|temperature` + `value=...` | set every zone to a preset (% to all, temp to sensor zones only)          |
 
 Each single-zone POST sends the command, awaits the reply, and returns the
 updated `zone.html` fragment for that id; the browser swaps it into
@@ -428,6 +438,21 @@ HTML fragment. htmx only swaps on 2xx, so a 422 surfaces via htmx's
 `htmx:responseError` event; the message is also human-readable for curl.
 Handlers return `AppError::msg(...)` for invalid form values, unknown ids, and
 manager/console failures.
+
+### 6.6 Automation configuration endpoints
+
+| Method | Path                              | Form field(s)          | Action                                        |
+| ------ | --------------------------------- | ---------------------- | --------------------------------------------- |
+| POST   | `/automation/setpoint-off/toggle` | `enabled=true\|false`  | Enable/disable the setpoint auto-off program. |
+| POST   | `/automation/setpoint-off/hold`   | `mins=15\|30\|60`      | Set the setpoint condition hold time.         |
+| POST   | `/automation/idle-off/toggle`     | `enabled=true\|false`  | Enable/disable the idle auto-off program.     |
+| POST   | `/automation/idle-off/timeout`    | `mins=15\|30\|60\|120` | Set the idle timeout.                         |
+
+Each handler mutates the shared `AutomationStore` (persisting to disk when a
+path is configured), then returns the re-rendered `#automation` partial so the
+UI reflects the new enable/parameter state immediately. Unknown preset values
+are rejected with a 422. The automation partial is **not** part of the SSE
+diff stream -- it only changes through these POSTs.
 
 ## 7. The mock controller
 
@@ -486,8 +511,13 @@ hidden unsupported fan speeds, Auto selection across Auto/AutoHeat/AutoCool,
 temperature-mode setpoints, the bulk bar (presets, control-type switches that
 skip sensorless zones, invalid-value rejection, the no-sensors Temp disable),
 AC setpoint/power handling including the AC-on-with-zones-off guard, 422s on
-unknown ids, the immutable vendor-asset cache, the `/refresh` re-pull, and the
-SSE live-change path driven through `MockController::mutate`.
+unknown ids, the immutable vendor-asset cache, the `/refresh` re-pull, the
+SSE live-change path driven through `MockController::mutate`, and the
+automation UI (section render, enable toggles, parameter presets, preset
+rejection). The `automation` module also has unit tests for the pure
+conditions (`setpoint_condition`, the control fingerprint) and short-duration
+engine tests against the mock controller that verify both programs actually
+turn the AC off (and that a control change resets the idle timer).
 
 ## 11. Adding a new control or view
 
@@ -505,3 +535,56 @@ SSE live-change path driven through `MockController::mutate`.
 Keep in mind the two-enum split (status vs control) and the `Temperature`
 numeric-accessor caveat: prefer `Increment`/`Decrement`, and for direct
 setpoints parse the `Display` string via `temp_to_f32`.
+
+## 12. Automation engine
+
+`automation/mod.rs` runs two hard-coded programs as a background task. The
+engine is spawned by the binaries (`spawn_automation`) with a configurable
+tick interval (`--automation-tick-secs`, default 60s; `0` disables it). It
+holds a `ManagerHandle`, watches the live snapshot, and fires by sending
+`Command::ControlAc { Power(Off) }` to every On AC. Zones are never touched.
+
+### 12.1 Shared config store
+
+`AutomationStore` (cheaply `Clone` -- an `Arc<RwLock<AutomationConfig>>` plus an
+optional `PathBuf`) is the single source of truth for the enable flags and
+parameters. The engine reads it each tick; the web handlers mutate it via
+typed setters (`set_setpoint_off_enabled`, `set_setpoint_off_hold`, ...) that
+persist to the configured JSON file atomically (write-to-tmp + rename). On
+startup `AutomationStore::load(path)` reads the file back; tests use
+`AutomationStore::new(config)` for an in-memory, non-persisting store. Defaults:
+both programs disabled, 15-minute setpoint hold, 30-minute idle timeout.
+
+### 12.2 Setpoint auto-off
+
+Fires when, for every on-zone: it is in temperature control mode, has an
+available sensor reading, and its reading has "reached" its setpoint. Reach is
+decided by the owning AC's mode (`zone_satisfied`): cooling modes (Cool /
+AutoCool / Dry) are satisfied at `reading <= setpoint + tol`, heating modes
+(Heat / AutoHeat) at `reading >= setpoint - tol`; Auto / Fan / unknown fall
+back to a symmetric `|reading - setpoint| <= tol` (`tol = 0.5 C`). A sensor
+zone with no reading, or any on-zone in airflow mode, disqualifies the program
+(safe: do not turn off). The condition must **remain** true for the hold time
+(`setpoint_since: Option<Instant>`); a flicker resets it. The fire is also
+guarded by "some AC is On" so a satisfied-but-already-off system does not
+re-fire.
+
+### 12.3 Idle auto-off
+
+Fires after `idle_off_timeout` with no **control** changes. "Control changes"
+are tracked by a `control_fingerprint` string over every zone power /
+control-mode / airflow / setpoint and every AC power / mode / fan / fan-int-auto
+/ setpoint -- deliberately **excluding** the live sensor readings and AC "now"
+temperatures, which drift continuously and would otherwise keep the idle timer
+alive forever. `last_change` is reset whenever the published snapshot's
+fingerprint changes (catching both web and wall-console interactions), and
+also when a program fires. The fire is guarded by "some AC is On".
+
+### 12.4 Why ACs only
+
+Both programs turn the **AC units** off rather than the zones. An AC running
+with no open airflow path is undesirable, and AC power-off is the single
+action that actually stops the system; zones left in their on/off state are
+harmless once the AC is off. Away/Sleep AC states are never touched -- only
+ACs whose power is `On` get a `Power(Off)` command, so a user's deliberate
+Away/Sleep setting survives an idle or setpoint trigger.

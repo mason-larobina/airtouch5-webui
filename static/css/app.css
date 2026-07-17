@@ -626,3 +626,89 @@ footer a:hover {
     grid-area: controls;
   }
 }
+
+/* Automation programs section (below the zones list). Two program cards,
+   each with a name/description, an On/Off enable toggle, and a row of
+   parameter preset buttons (hold time / idle timeout). */
+.automation {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.program-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.program-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.program-info {
+  min-width: 0;
+}
+.program-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+.program-desc {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.program-toggle {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+.program-toggle .btn {
+  min-width: 48px;
+  text-align: center;
+}
+/* The On button reads as "active/good" when enabled, the Off button when
+   disabled, mirroring the AC power On/Off pair. */
+.program-toggle .btn.on.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--text);
+}
+.program-toggle .btn.off.active {
+  background: var(--panel-3);
+  border-color: var(--border);
+  color: var(--muted);
+}
+.program-param {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.program-param .label {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.program-param .preset-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.program-param .btn.preset {
+  min-width: 48px;
+  text-align: center;
+  padding: 8px 12px;
+}
+.program-param .btn.preset.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--text);
+}
