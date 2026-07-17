@@ -18,7 +18,7 @@
       <div class="zone-flags">
         {% for f in zone.flags %}
         <span class="flag{{ zone.flag_class(f) }}"
-              title="{{ f }}">{{ f }}</span>
+              title="{{ f }}">{% if let Some(g) = zone.flag_glyph(f) %}{{ g }}{% else %}{{ f }}{% endif %}</span>
         {% endfor %}
       </div>
       {% endif %}
