@@ -579,13 +579,13 @@ impl ZoneView {
     }
 
     /// Glyph to render for a flag in place of its text label, when one is
-    /// appropriate. LowBattery uses the stroked battery symbol (U+1F50B) so
+    /// appropriate. LowBattery uses the low-battery symbol (U+1FAAB) so
     /// the badge reads as a low-battery icon at a glance; other flags keep
     /// their text label (returned as None). Only HTML files use Unicode
     /// glyphs, so the symbol lives in the template, not the Rust source.
     pub fn flag_glyph(&self, f: &str) -> Option<&'static str> {
         match f {
-            "LowBattery" => Some("\u{1F50B}\u{FE0E}"),
+            "LowBattery" => Some("\u{1FAAB}\u{FE0E}"),
             _ => None,
         }
     }
