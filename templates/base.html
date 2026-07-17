@@ -165,6 +165,28 @@
       background: var(--panel); border: 1px solid var(--border);
       border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
     }
+    /* Bulk "all zones" control bar at the top of the zone list: a label, a
+       temp / % mode toggle that switches every zone, and a row of preset
+       buttons whose values depend on the selected mode (airflow percentages
+       or temperature setpoints). It lives inside #zones so a bulk POST that
+       re-renders the partial swaps it in along with the zone rows. */
+    .bulk-bar {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      background: var(--panel-2);
+    }
+    .bulk-bar .bulk-label {
+      font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--muted); font-weight: 600; white-space: nowrap;
+    }
+    .bulk-bar .bulk-mode { width: 128px; flex: none; }
+    .bulk-bar .bulk-presets {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto;
+    }
+    .bulk-bar .btn.preset {
+      min-height: 36px; padding: 6px 12px; font-size: 13px;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
     /* Zone rows are laid out as a 6-column grid: zone name (fills remaining
        width, ellipsises on overflow), current temp, temp/% control, [ - ],
        setpoint value, [ + ]. Every column except the name has a fixed width so

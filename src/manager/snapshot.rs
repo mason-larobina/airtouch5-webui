@@ -36,6 +36,38 @@ impl PartialEq for Snapshot {
     }
 }
 
+impl Snapshot {
+    /// Whether any zone has a temperature sensor -- i.e. whether temperature
+    /// control is available for the bulk "all zones" bar at all. With no
+    /// sensor zones the Temp button is disabled.
+    pub fn bulk_temp_available(&self) -> bool {
+        self.zones.values().any(|z| z.has_sensor)
+    }
+
+    /// The control mode currently in effect across all sensor-equipped zones:
+    /// `Temperature` if every sensor zone is in temperature mode (and at least
+    /// one exists), otherwise `Airflow`. Sensorless zones can never be
+    /// temperature-controlled so they are ignored. This is the default the
+    /// zones partial uses for the bulk bar on a fresh / SSE render.
+    pub fn bulk_mode(&self) -> BulkModeView {
+        let mut any_sensor = false;
+        let mut all_temp = true;
+        for z in self.zones.values() {
+            if z.has_sensor {
+                any_sensor = true;
+                if !z.is_temp() {
+                    all_temp = false;
+                }
+            }
+        }
+        if any_sensor && all_temp {
+            BulkModeView::Temperature
+        } else {
+            BulkModeView::Airflow
+        }
+    }
+}
+
 #[derive(Clone, PartialEq, Debug)]
 pub struct ConsoleInfo {
     pub name: String,
@@ -123,6 +155,28 @@ pub enum ControlModeView {
     Airflow,
     Temperature,
     Unknown,
+}
+
+/// The control mode selected on the bulk "all zones" bar. Drives which preset
+/// row (airflow percentages vs temperature setpoints) the zones partial shows.
+/// On a fresh render it is derived from the live zone states via
+/// [`Snapshot::bulk_mode`]; a bulk control-type POST overrides it so the bar
+/// reflects the user's last choice even before every zone has reported back.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum BulkModeView {
+    Airflow,
+    Temperature,
+}
+
+impl BulkModeView {
+    /// True when the bulk bar is in airflow (%) mode.
+    pub fn is_airflow(&self) -> bool {
+        matches!(self, Self::Airflow)
+    }
+    /// True when the bulk bar is in temperature mode.
+    pub fn is_temperature(&self) -> bool {
+        matches!(self, Self::Temperature)
+    }
 }
 
 #[derive(Clone, PartialEq, Debug)]

@@ -11,7 +11,7 @@ use std::time::Duration;
 use futures_util::StreamExt;
 
 use aircon::mock::{self, MockController};
-use aircon::manager::snapshot::ZonePowerView;
+use aircon::manager::snapshot::{ControlModeView, ZonePowerView};
 use aircon::web;
 
 /// Per-test hard timeout. Tests against the mock controller are instant; this is
@@ -463,6 +463,307 @@ async fn zone_temperature_mode_stores_setpoint() {
             .unwrap();
         assert!(body.contains("21.5"), "expected setpoint 21.5, got: {body}");
         assert!(body.contains("Living Room"));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn zones_partial_renders_bulk_bar_with_airflow_presets() {
+    capped(async {
+        let (addr, _m) = spawn_server().await;
+        // The sample snapshot has a mix of airflow and temperature zones, so
+        // the derived bulk mode is airflow (%) -- the airflow preset row
+        // (25/50/75/100) must show and the temperature presets must not.
+        let body = client()
+            .get(format!("http://{addr}/partials/zones"))
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        assert!(body.contains("All zones"), "bulk bar label missing");
+        assert!(
+            body.contains("/zones/control-type"),
+            "bulk mode toggle buttons missing"
+        );
+        for (val, label) in [("25", "25%"), ("50", "50%"), ("75", "75%"), ("100", "100%")] {
+            assert!(
+                body.contains(&format!("{{\"mode\":\"airflow\",\"value\":\"{val}\"}}")),
+                "airflow preset {label:?} (value {val:?}) missing, got: {body}"
+            );
+            assert!(
+                body.contains(&format!(">{label}</button>")),
+                "airflow preset label {label:?} missing, got: {body}"
+            );
+        }
+        assert!(
+            !body.contains("\"mode\":\"temperature\""),
+            "temperature presets must not render in airflow bulk mode, got: {body}"
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn bulk_control_type_airflow_switches_all_zones() {
+    capped(async {
+        let (addr, _m) = spawn_server().await;
+        // Living Room (zone 0) and Study (zone 3) start in temperature mode.
+        // Switching every zone to airflow must move them out of temperature
+        // mode and re-render the bulk bar with the % button active.
+        let body = client()
+            .post(format!("http://{addr}/zones/control-type"))
+            .form(&[("type", "airflow")])
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+
+        // The bulk % button is the active one now.
+        let airflow_btn = body
+            .split_once("{\"type\":\"airflow\"}")
+            .expect("bulk airflow button missing")
+            .1
+            .split_once("% </button>")
+            .expect("bulk airflow button close missing")
+            .0;
+        assert!(
+            airflow_btn.contains("class=\"active\""),
+            "bulk % button must be active after airflow select, got: {airflow_btn}"
+        );
+
+        // The temperature presets must no longer render.
+        assert!(
+            !body.contains("\"mode\":\"temperature\""),
+            "temperature presets must not render in airflow bulk mode, got: {body}"
+        );
+
+        // Living Room (zone 0) was in temperature mode; it must now render an
+        // airflow percentage (its airflow_pct is 0 -> "0%") instead of a
+        // setpoint.
+        let zone0 = body
+            .split_once("id=\"zone-0\"")
+            .expect("zone 0 row missing")
+            .1
+            .split_once("id=\"zone-")
+            .map(|(seg, _)| seg)
+            .unwrap_or_else(|| body.split_once("id=\"zone-0\"").unwrap().1);
+        assert!(
+            zone0.contains("0%"),
+            "zone 0 must be in airflow mode after bulk switch, got: {zone0}"
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn bulk_control_type_temperature_skips_sensorless_zones() {
+    capped(async {
+        let (addr, _m) = spawn_server().await;
+        // Kitchen (zone 2) has a sensor and starts in airflow mode at 80%.
+        // Bedroom (zone 1) has no sensor. Switching all zones to temperature
+        // must move Kitchen into temperature mode but leave Bedroom alone
+        // (sensorless zones cannot be temperature-controlled).
+        let body = client()
+            .post(format!("http://{addr}/zones/control-type"))
+            .form(&[("type", "temperature")])
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+
+        // Bulk Temp button is active and the temperature presets render.
+        let temp_btn = body
+            .split_once("{\"type\":\"temperature\"}")
+            .expect("bulk temperature button missing")
+            .1
+            .split_once(">Temp</button>")
+            .expect("bulk temp button close missing")
+            .0;
+        assert!(
+            temp_btn.contains("class=\"active\""),
+            "bulk Temp button must be active after temperature select, got: {temp_btn}"
+        );
+        for t in ["20", "21", "22", "23"] {
+            assert!(
+                body.contains(&format!("{{\"mode\":\"temperature\",\"value\":\"{t}\"}}")),
+                "temperature preset {t:?} missing, got: {body}"
+            );
+        }
+
+        // Kitchen (zone 2) is now in temperature mode with a fresh 20.0 C
+        // setpoint (the mock seeds 20.0 when switching to temperature).
+        let zone2 = body
+            .split_once("id=\"zone-2\"")
+            .expect("zone 2 row missing")
+            .1
+            .split_once("id=\"zone-3\"")
+            .map(|(seg, _)| seg)
+            .unwrap_or_else(|| body.split_once("id=\"zone-2\"").unwrap().1);
+        assert!(
+            zone2.contains("20.0"),
+            "zone 2 must be in temperature mode after bulk switch, got: {zone2}"
+        );
+
+        // Bedroom (zone 1) stays in airflow mode (still shows "20%").
+        let zone1 = body
+            .split_once("id=\"zone-1\"")
+            .expect("zone 1 row missing")
+            .1
+            .split_once("id=\"zone-2\"")
+            .map(|(seg, _)| seg)
+            .unwrap_or_else(|| body.split_once("id=\"zone-1\"").unwrap().1);
+        assert!(
+            zone1.contains("20%"),
+            "sensorless zone 1 must remain in airflow mode, got: {zone1}"
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn bulk_preset_airflow_sets_every_zone() {
+    capped(async {
+        let (addr, _m) = spawn_server().await;
+        // Apply the 50% airflow preset to every zone.
+        let body = client()
+            .post(format!("http://{addr}/zones/preset"))
+            .form(&[("mode", "airflow"), ("value", "50")])
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        assert!(body.contains("Living Room"));
+        // Every zone row must now report 50% airflow, including the ones that
+        // were previously in temperature mode (zones 0 and 3).
+        for id in [0, 2, 3, 7] {
+            let row = body
+                .split_once(&format!("id=\"zone-{id}\""))
+                .unwrap_or_else(|| panic!("zone {id} row missing"))
+                .1;
+            // Stop at the next zone row so we only inspect this one.
+            let row = row.split_once("id=\"zone-").map(|(seg, _)| seg).unwrap_or(row);
+            assert!(
+                row.contains("50%"),
+                "zone {id} must show 50% after bulk airflow preset, got: {row}"
+            );
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn bulk_preset_temperature_sets_sensor_zones_only() {
+    capped(async {
+        let (addr, _m) = spawn_server().await;
+        // Apply the 22 C preset: every sensor zone must land on a 22.0 C
+        // setpoint in temperature mode. Sensorless zones are untouched.
+        let body = client()
+            .post(format!("http://{addr}/zones/preset"))
+            .form(&[("mode", "temperature"), ("value", "22")])
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        // Sensor zones: 0 (Living Room), 2 (Kitchen), 3 (Study), 7 (Bathroom).
+        for id in [0, 2, 3, 7] {
+            let row = body
+                .split_once(&format!("id=\"zone-{id}\""))
+                .unwrap_or_else(|| panic!("zone {id} row missing"))
+                .1;
+            let row = row.split_once("id=\"zone-").map(|(seg, _)| seg).unwrap_or(row);
+            assert!(
+                row.contains("22.0"),
+                "sensor zone {id} must show 22.0 C after bulk temp preset, got: {row}"
+            );
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn bulk_preset_rejects_invalid_value() {
+    capped(async {
+        let (addr, _m) = spawn_server().await;
+        // An out-of-range airflow value must be rejected with 422 and must not
+        // mutate any zone.
+        let resp = client()
+            .post(format!("http://{addr}/zones/preset"))
+            .form(&[("mode", "airflow"), ("value", "150")])
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(
+            resp.status(),
+            reqwest::StatusCode::UNPROCESSABLE_ENTITY,
+            "out-of-range airflow preset must be 422"
+        );
+        // Zone 2 (Kitchen) is still at its original 80%.
+        let body = client()
+            .get(format!("http://{addr}/partials/zones/2"))
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        assert!(body.contains("80%"), "zone 2 must be unchanged, got: {body}");
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn bulk_temp_button_disabled_without_any_sensors() {
+    capped(async {
+        let (addr, mock) = spawn_server().await;
+        // Strip sensors from every zone: the bulk Temp button must render
+        // disabled and the % button must be the active one.
+        mock.mutate(|s| {
+            for z in s.zones.values_mut() {
+                z.has_sensor = false;
+                z.sensor = None;
+                z.control_mode = ControlModeView::Airflow;
+                z.setpoint = None;
+            }
+        })
+        .await;
+
+        let body = loop {
+            let b = client()
+                .get(format!("http://{addr}/partials/zones"))
+                .send()
+                .await
+                .unwrap()
+                .text()
+                .await
+                .unwrap();
+            // Wait until the snapshot without sensors has propagated.
+            if !b.contains("Temp</button>") || b.contains("disabled") {
+                break b;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        };
+
+        let temp_btn = body
+            .split_once("{\"type\":\"temperature\"}")
+            .expect("bulk temperature button missing")
+            .1
+            .split_once(">Temp</button>")
+            .expect("bulk temp button close missing")
+            .0;
+        assert!(
+            temp_btn.contains("disabled"),
+            "bulk Temp button must be disabled when no zone has a sensor, got: {temp_btn}"
+        );
     })
     .await;
 }

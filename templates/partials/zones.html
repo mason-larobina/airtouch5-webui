@@ -1,4 +1,47 @@
 <div id="zones" class="zone-list" sse-swap="zones" hx-swap="outerHTML">
+  <div class="bulk-bar">
+    <span class="bulk-label">All zones</span>
+    <div class="mode-toggle bulk-mode" role="group" aria-label="all zones control mode">
+      <button type="button"
+              hx-post="/zones/control-type" hx-vals='{"type":"airflow"}'
+              hx-target="#zones" hx-swap="outerHTML"
+              {% if bulk_mode.is_airflow() %} class="active" aria-pressed="true"{% endif %}>% </button>
+      <button type="button"
+              hx-post="/zones/control-type" hx-vals='{"type":"temperature"}'
+              hx-target="#zones" hx-swap="outerHTML"
+              {% if bulk_mode.is_temperature() %} class="active" aria-pressed="true"{% endif %}
+              {% if !snapshot.bulk_temp_available() %} disabled{% endif %}>Temp</button>
+    </div>
+    <div class="bulk-presets">
+      {% if bulk_mode.is_temperature() %}
+      <button class="btn preset" type="button"
+              hx-post="/zones/preset" hx-vals='{"mode":"temperature","value":"20"}'
+              hx-target="#zones" hx-swap="outerHTML">20</button>
+      <button class="btn preset" type="button"
+              hx-post="/zones/preset" hx-vals='{"mode":"temperature","value":"21"}'
+              hx-target="#zones" hx-swap="outerHTML">21</button>
+      <button class="btn preset" type="button"
+              hx-post="/zones/preset" hx-vals='{"mode":"temperature","value":"22"}'
+              hx-target="#zones" hx-swap="outerHTML">22</button>
+      <button class="btn preset" type="button"
+              hx-post="/zones/preset" hx-vals='{"mode":"temperature","value":"23"}'
+              hx-target="#zones" hx-swap="outerHTML">23</button>
+      {% else %}
+      <button class="btn preset" type="button"
+              hx-post="/zones/preset" hx-vals='{"mode":"airflow","value":"25"}'
+              hx-target="#zones" hx-swap="outerHTML">25%</button>
+      <button class="btn preset" type="button"
+              hx-post="/zones/preset" hx-vals='{"mode":"airflow","value":"50"}'
+              hx-target="#zones" hx-swap="outerHTML">50%</button>
+      <button class="btn preset" type="button"
+              hx-post="/zones/preset" hx-vals='{"mode":"airflow","value":"75"}'
+              hx-target="#zones" hx-swap="outerHTML">75%</button>
+      <button class="btn preset" type="button"
+              hx-post="/zones/preset" hx-vals='{"mode":"airflow","value":"100"}'
+              hx-target="#zones" hx-swap="outerHTML">100%</button>
+      {% endif %}
+    </div>
+  </div>
   {% for zone in snapshot.zones.values() %}
   {% include "partials/zone.html" %}
   {% endfor %}
