@@ -1,0 +1,6 @@
+<div id="connection-state"
+     class="{% if snapshot.connected %}connected{% else %}disconnected{% endif %}"
+     sse-swap="state" hx-swap="outerHTML">
+  <span class="dot"></span>
+  <span>{% if snapshot.connected %}Connected to AirTouch 5 console{% else %}Disconnected - reconnecting...{% endif %}</span>
+</div>

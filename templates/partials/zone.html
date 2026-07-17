@@ -1,0 +1,56 @@
+<div id="zone-{{ zone.id }}"
+     class="zone-row{% if !zone.is_on() %} off{% endif %}"
+     sse-swap="zone-{{ zone.id }}" hx-swap="outerHTML">
+
+  <div class="zone-name">
+    <div class="name-line">
+      <button class="zone-toggle {{ zone.power_class() }}"
+              type="button"
+              aria-pressed="{% if zone.is_on() %}true{% else %}false{% endif %}"
+              aria-label="toggle zone power"
+              title="Power: {{ zone.power_class() }}"
+              hx-post="/zone/{{ zone.id }}/power"
+              hx-vals='{"power":"toggle"}'
+              hx-target="#zone-{{ zone.id }}"
+              hx-swap="outerHTML"></button>
+      <span class="name">{{ zone.name }}</span>
+      {% if !zone.flags.is_empty() %}
+      <div class="zone-flags">
+        {% for f in zone.flags %}
+        <span class="flag{{ zone.flag_class(f) }}"
+              title="{{ f }}">{{ f }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="zone-temp{% if zone.has_sensor %} has-sensor{% endif %}">{{ zone.sensor_display() }}</div>
+
+  <div class="mode-toggle" role="group" aria-label="control mode">
+    <button type="button"
+            hx-post="/zone/{{ zone.id }}/control-type"
+            hx-vals='{"type":"airflow"}'
+            hx-target="#zone-{{ zone.id }}" hx-swap="outerHTML"
+            {% if zone.is_airflow() %} class="active" aria-pressed="true"{% endif %}
+            {% if !zone.has_sensor %} disabled{% endif %}>% </button>
+    <button type="button"
+            hx-post="/zone/{{ zone.id }}/control-type"
+            hx-vals='{"type":"temperature"}'
+            hx-target="#zone-{{ zone.id }}" hx-swap="outerHTML"
+            {% if zone.is_temp() %} class="active" aria-pressed="true"{% endif %}
+            {% if !zone.has_sensor %} disabled{% endif %}>Temp</button>
+  </div>
+
+  <div class="zone-stepper">
+    <button class="btn step" type="button" aria-label="decrement"
+            hx-post="/zone/{{ zone.id }}/step"
+            hx-vals='{"dir":"down"}'
+            hx-target="#zone-{{ zone.id }}" hx-swap="outerHTML">-</button>
+    <span class="val">{{ zone.value_display() }}</span>
+    <button class="btn step" type="button" aria-label="increment"
+            hx-post="/zone/{{ zone.id }}/step"
+            hx-vals='{"dir":"up"}'
+            hx-target="#zone-{{ zone.id }}" hx-swap="outerHTML">+</button>
+  </div>
+</div>

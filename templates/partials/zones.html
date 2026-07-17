@@ -1,0 +1,8 @@
+<div id="zones" class="zone-list" sse-swap="zones" hx-swap="outerHTML">
+  {% for zone in snapshot.zones.values() %}
+  {% include "partials/zone.html" %}
+  {% endfor %}
+  {% if snapshot.zones.is_empty() %}
+  <div class="zone-row"><div class="zone-name"><span class="err-line">No zones discovered yet.</span></div></div>
+  {% endif %}
+</div>

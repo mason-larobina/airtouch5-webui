@@ -1,0 +1,8 @@
+<div id="acs" sse-swap="acs" hx-swap="outerHTML" style="display: flex; flex-direction: column; gap: 16px;">
+  {% for ac in snapshot.acs.values() %}
+  {% include "partials/ac.html" %}
+  {% endfor %}
+  {% if snapshot.acs.is_empty() %}
+  <div class="ac-card"><div class="err-line">No AC units discovered yet.</div></div>
+  {% endif %}
+</div>

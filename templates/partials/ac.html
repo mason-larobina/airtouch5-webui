@@ -1,0 +1,89 @@
+<div id="ac-{{ ac.id }}" class="ac-card" sse-swap="ac-{{ ac.id }}" hx-swap="outerHTML">
+  <div class="head">
+    <div class="name">{{ ac.name }}</div>
+    {% if ac.has_status() %}<span class="power-badge {{ ac.power_badge_class() }}">{{ ac.power_badge_text() }}</span>{% endif %}
+  </div>
+
+  {% if !ac.has_status() %}
+  <div class="err-line">Waiting for AC status...</div>
+  {% else %}
+  <!-- Power -->
+  <div class="field">
+    <div class="label">Power</div>
+    <div class="power-group">
+      <button class="btn on{% if ac.power_eq("On") %} selected{% endif %}"
+              hx-post="/ac/{{ ac.id }}/power" hx-vals='{"power":"on"}'
+              hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML">ON</button>
+      <button class="btn off{% if ac.power_eq("Off") %} selected{% endif %}"
+              hx-post="/ac/{{ ac.id }}/power" hx-vals='{"power":"off"}'
+              hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML">OFF</button>
+      <button class="btn away{% if ac.power_is_away() %} selected{% endif %}"
+              hx-post="/ac/{{ ac.id }}/power" hx-vals='{"power":"away"}'
+              hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML">Away</button>
+      <button class="btn sleep{% if ac.power_eq("Sleep") %} selected{% endif %}"
+              hx-post="/ac/{{ ac.id }}/power" hx-vals='{"power":"sleep"}'
+              hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML">Sleep</button>
+    </div>
+  </div>
+
+  <!-- Mode -->
+  <div class="field">
+    <div class="label">Mode</div>
+    <div class="segmented" role="group" aria-label="ac mode">
+      <button hx-post="/ac/{{ ac.id }}/mode" hx-vals='{"mode":"auto"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.mode_eq("Auto") %} class="active"{% endif %}{% if !ac.mode_supported("Auto") %} disabled{% endif %}>Auto</button>
+      <button hx-post="/ac/{{ ac.id }}/mode" hx-vals='{"mode":"heat"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.mode_eq("Heat") %} class="active"{% endif %}{% if !ac.mode_supported("Heat") %} disabled{% endif %}>Heat</button>
+      <button hx-post="/ac/{{ ac.id }}/mode" hx-vals='{"mode":"dry"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.mode_eq("Dry") %} class="active"{% endif %}{% if !ac.mode_supported("Dry") %} disabled{% endif %}>Dry</button>
+      <button hx-post="/ac/{{ ac.id }}/mode" hx-vals='{"mode":"fan"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.mode_eq("Fan") %} class="active"{% endif %}{% if !ac.mode_supported("Fan") %} disabled{% endif %}>Fan</button>
+      <button hx-post="/ac/{{ ac.id }}/mode" hx-vals='{"mode":"cool"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.mode_eq("Cool") %} class="active"{% endif %}{% if !ac.mode_supported("Cool") %} disabled{% endif %}>Cool</button>
+    </div>
+  </div>
+
+  <!-- Fan speed -->
+  <div class="field">
+    <div class="label">Fan speed</div>
+    <div class="fan-row">
+      <div class="segmented compact" role="group" aria-label="fan speed">
+        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"auto"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Auto") %} class="active"{% endif %}{% if !ac.fan_supported("Auto") %} disabled{% endif %}>Auto</button>
+        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"quiet"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Quiet") %} class="active"{% endif %}{% if !ac.fan_supported("Quiet") %} disabled{% endif %}>Quiet</button>
+        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"low"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Low") %} class="active"{% endif %}{% if !ac.fan_supported("Low") %} disabled{% endif %}>Low</button>
+        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"medium"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Med") %} class="active"{% endif %}{% if !ac.fan_supported("Medium") %} disabled{% endif %}>Med</button>
+        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"high"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("High") %} class="active"{% endif %}{% if !ac.fan_supported("High") %} disabled{% endif %}>High</button>
+        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"powerful"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Power") %} class="active"{% endif %}{% if !ac.fan_supported("Powerful") %} disabled{% endif %}>Power</button>
+        <button hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"turbo"}' hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"{% if ac.fan_eq("Turbo") %} class="active"{% endif %}{% if !ac.fan_supported("Turbo") %} disabled{% endif %}>Turbo</button>
+      </div>
+      <button class="int-auto{% if ac.fan_int_auto() %} active{% endif %}"
+              title="IntelligentAuto"
+              hx-post="/ac/{{ ac.id }}/fan" hx-vals='{"fan":"intelligentauto"}'
+              hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML">Int Auto</button>
+    </div>
+  </div>
+
+  <!-- Setpoint -->
+  <div class="field">
+    <div class="label">Setpoint</div>
+    <div class="setpoint-row">
+      <div class="current">
+        <span class="k">now</span>
+        <span class="v">{{ ac.temp_display() }}</span>
+      </div>
+      <div class="stepper">
+        <button class="btn step" aria-label="decrement setpoint"
+                hx-post="/ac/{{ ac.id }}/setpoint" hx-vals='{"temp":"{{ ac.setpoint_down() }}"}'
+                hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"
+                {% if ac.setpoint_down().is_empty() %}disabled{% endif %}>-</button>
+        <span class="val">{{ ac.setpoint_display() }}</span>
+        <button class="btn step" aria-label="increment setpoint"
+                hx-post="/ac/{{ ac.id }}/setpoint" hx-vals='{"temp":"{{ ac.setpoint_up() }}"}'
+                hx-target="#ac-{{ ac.id }}" hx-swap="outerHTML"
+                {% if ac.setpoint_up().is_empty() %}disabled{% endif %}>+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timer (status only; the crate exposes no timer-control API) -->
+  <div class="field">
+    <div class="label">Timer</div>
+    <span class="timer-status{% if ac.timer_text() == "timer off" %} off{% endif %}">{{ ac.timer_text() }}</span>
+  </div>
+  {% endif %}
+</div>

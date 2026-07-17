@@ -1,0 +1,21 @@
+<div id="system" sse-swap="system" hx-swap="outerHTML">
+  <div>
+    <div class="title"><span class="console-name">{{ snapshot.console.name }}</span></div>
+    <div class="meta">
+      <span>addr <b>{{ snapshot.console.addr_str() }}</b></span>
+      <span>id <b>{{ snapshot.console.id_str() }}</b></span>
+      {% if let Some(cid) = snapshot.console.console_id.as_ref() %}
+      <span>console <b>{{ cid }}</b></span>
+      {% endif %}
+      <span>fw <b>{{ snapshot.console.fw_str() }}</b></span>
+      <span>update <b>{{ snapshot.console.update_str() }}</b></span>
+      <span>acs <b>{{ snapshot.console.ac_count }}</b></span>
+      <span>zones <b>{{ snapshot.console.zone_count }}</b></span>
+    </div>
+  </div>
+  <button class="refresh"
+          title="Re-pull full status"
+          hx-post="/refresh"
+          hx-target="#system"
+          hx-swap="outerHTML">[ refresh ]</button>
+</div>
