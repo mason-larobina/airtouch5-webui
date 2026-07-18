@@ -236,10 +236,21 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  /* overflow: hidden clips the .head band's panel-2 fill to the card's
+     rounded top corners, mirroring the .zone-list / .bulk-bar treatment. */
+  overflow: hidden;
 }
 /* Header row mirroring the zone row: the console name (a long title that
-   ellipsises on overflow) on the left, the refresh button pinned right. */
+   ellipsises on overflow) on the left, the refresh button pinned right.
+   The head is a panel-2 band pulled flush to the card edges (negative
+   margins cancel the 14px / 16px card padding) with a border-bottom, so it
+   reads like the zone-list bulk-bar; the head's own padding keeps the
+   title / refresh button in their original position. */
 #system .head {
+  margin: -14px -16px 0;
+  padding: 14px 16px 12px;
+  background: var(--panel-2);
+  border-bottom: var(--border-w) solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -313,8 +324,19 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  /* overflow: hidden clips the .head band's panel-2 fill to the card's
+     rounded top corners, mirroring the .zone-list / .bulk-bar treatment. */
+  overflow: hidden;
 }
+/* Header band: pulled flush to the card edges (negative margins cancel the
+   16px card padding) so the panel-2 fill and border-bottom run edge-to-edge
+   like the zone-list bulk-bar, while the head's own 16px padding keeps the
+   name / power buttons in their original position. */
 .ac-card .head {
+  margin: -16px -16px 0;
+  padding: 16px 16px 12px;
+  background: var(--panel-2);
+  border-bottom: var(--border-w) solid var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -908,8 +930,19 @@ footer a:hover {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  /* overflow: hidden clips the .program-head band's panel-2 fill to the
+     card's rounded top corners, mirroring .zone-list / .bulk-bar. */
+  overflow: hidden;
 }
+/* Header band: pulled flush to the card edges (negative margins cancel the
+   14px / 16px card padding) so the panel-2 fill and border-bottom run
+   edge-to-edge like the zone-list bulk-bar, while the head's own padding
+   keeps the name / controls in their original position. */
 .program-head {
+  margin: -14px -16px 0;
+  padding: 14px 16px 12px;
+  background: var(--panel-2);
+  border-bottom: var(--border-w) solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
