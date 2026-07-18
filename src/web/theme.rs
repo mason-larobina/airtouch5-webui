@@ -24,14 +24,14 @@ pub struct Theme {
 /// the plain `:root` block in app.css (no attribute selector needed).
 pub const THEMES: &[Theme] = &[
     Theme {
-        name: "midnight",
-        label: "Midnight",
-        bg: "#0f1115",
-    },
-    Theme {
         name: "daylight",
         label: "Daylight",
         bg: "#eef1f5",
+    },
+    Theme {
+        name: "midnight",
+        label: "Midnight",
+        bg: "#0f1115",
     },
     Theme {
         name: "terminal",
@@ -77,8 +77,8 @@ mod tests {
     #[test]
     fn unknown_theme_falls_back_to_default() {
         assert_eq!(lookup("terminal").name, "terminal");
-        assert_eq!(lookup("bogus").name, "midnight");
-        assert_eq!(lookup("").name, "midnight");
+        assert_eq!(lookup("bogus").name, "daylight");
+        assert_eq!(lookup("").name, "daylight");
     }
 
     #[test]
@@ -86,6 +86,6 @@ mod tests {
         let mut headers = HeaderMap::new();
         headers.insert(COOKIE, "foo=1; theme=ember; bar=2".parse().unwrap());
         assert_eq!(from_headers(&headers).name, "ember");
-        assert_eq!(from_headers(&HeaderMap::new()).name, "midnight");
+        assert_eq!(from_headers(&HeaderMap::new()).name, "daylight");
     }
 }

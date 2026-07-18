@@ -1,6 +1,6 @@
-# aircon -- AirTouch 5 web UI
+# airtouch5-controller-webui -- AirTouch 5 web UI
 
-`aircon` is a small web server that wraps the
+`airtouch5-controller-webui` is a small web server that wraps the
 [`airtouch5`](https://codeberg.org/kbriggs/airtouch5) crate. It discovers an
 AirTouch 5 console on your local network, shows its state, and lets you control
 AC units and zones from a browser. The UI is server-rendered HTML updated live
@@ -37,16 +37,16 @@ conditioning.
   setpoint (held for 15/30/60/120 minutes first), and **Idle auto-off** turns the
   AC(s) off after 15/30/60/120 minutes with no control changes. Settings are
   persisted to a JSON file and survive restarts.
-- **Two binaries.** `aircon` talks to a real console; `aircon-mock` serves the
+- **Two binaries.** `airtouch5-controller-webui` talks to a real console; `airtouch5-controller-webui-mock` serves the
   exact same UI against an in-memory mock, handy for trying the interface
   without hardware.
 
 ## Requirements
 
-- An AirTouch 5 console reachable on your LAN (for `aircon`).
+- An AirTouch 5 console reachable on your LAN (for `airtouch5-controller-webui`).
 - A recent Rust toolchain (edition 2024).
 
-`aircon` listens on `0.0.0.0:3000` by default, so it is reachable from other
+`airtouch5-controller-webui` listens on `0.0.0.0:3000` by default, so it is reachable from other
 devices on the network. Bind to `127.0.0.1:3000` if you only want local access.
 
 ## Building
@@ -55,15 +55,15 @@ devices on the network. Bind to `127.0.0.1:3000` if you only want local access.
 cargo build --release
 ```
 
-The release binaries land at `target/release/aircon` and
-`target/release/aircon-mock`.
+The release binaries land at `target/release/airtouch5-controller-webui` and
+`target/release/airtouch5-controller-webui-mock`.
 
 ## Running
 
 ### The real server
 
 ```sh
-./target/release/aircon
+./target/release/airtouch5-controller-webui
 ```
 
 Then open `http://localhost:3000` (or `http://<this-machine>:3000` from another
@@ -73,14 +73,14 @@ device on the same network).
 
 | Option                        | Env var                       | Default        | Meaning                                                                                                                                                                           |
 | ----------------------------- | ----------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--bind <addr:port>`          | `AIRCON_LISTEN`               | `0.0.0.0:3000` | Address and port the HTTP server listens on.                                                                                                                                      |
-| `--discovery-timeout-ms <ms>` | `AIRCON_DISCOVERY_TIMEOUT_MS` | `3000`         | How long UDP discovery waits for a console response.                                                                                                                              |
+| `--bind <addr:port>`          | `AIRTOUCH5_CONTROLLER_WEBUI_LISTEN`               | `0.0.0.0:3000` | Address and port the HTTP server listens on.                                                                                                                                      |
+| `--discovery-timeout-ms <ms>` | `AIRTOUCH5_CONTROLLER_WEBUI_DISCOVERY_TIMEOUT_MS` | `3000`         | How long UDP discovery waits for a console response.                                                                                                                              |
 | `--timeout <seconds>`         | (none)                        | off            | Shut down after N seconds (mainly for tests).                                                                                                                                     |
-| `--automation-tick-secs <s>`  | `AIRCON_AUTOMATION_TICK_SECS` | `60`           | How often the automation engine evaluates its programs. `0` disables it.                                                                                                          |
-| `--automation-config <path>`  | `AIRCON_AUTOMATION_CONFIG`    | XDG config dir | File the automation enable/parameter settings are saved to and loaded from. Defaults to `$XDG_CONFIG_HOME/aircon/automation.json` (typically `~/.config/aircon/automation.json`). |
+| `--automation-tick-secs <s>`  | `AIRTOUCH5_CONTROLLER_WEBUI_AUTOMATION_TICK_SECS` | `60`           | How often the automation engine evaluates its programs. `0` disables it.                                                                                                          |
+| `--automation-config <path>`  | `AIRTOUCH5_CONTROLLER_WEBUI_AUTOMATION_CONFIG`    | XDG config dir | File the automation enable/parameter settings are saved to and loaded from. Defaults to `$XDG_CONFIG_HOME/airtouch5-controller-webui/automation.json` (typically `~/.config/airtouch5-controller-webui/automation.json`). |
 
-Logging is environment-driven. Set the tracing filter with `AIRCON_LOG` or
-`RUST_LOG`; the default is `aircon=info,tower_http=info`. Control actions (every
+Logging is environment-driven. Set the tracing filter with `AIRTOUCH5_CONTROLLER_WEBUI_LOG` or
+`RUST_LOG`; the default is `airtouch5_controller_webui=info,tower_http=info`. Control actions (every
 `POST`) are logged at `info` with the client IP, the action, the response
 status, and elapsed time; page, partial, SSE, and asset requests are logged at
 `debug`.
@@ -88,12 +88,12 @@ status, and elapsed time; page, partial, SSE, and asset requests are logged at
 ### The mock server
 
 ```sh
-./target/release/aircon-mock
+./target/release/airtouch5-controller-webui-mock
 ```
 
-`aircon-mock` serves the same UI against a built-in mock controller that starts
+`airtouch5-controller-webui-mock` serves the same UI against a built-in mock controller that starts
 with a representative one-AC / six-zone setup (mirroring the static mockup). It
-shares `--bind` / `AIRCON_LISTEN` and `--timeout` with `aircon` but has no
+shares `--bind` / `AIRTOUCH5_CONTROLLER_WEBUI_LISTEN` and `--timeout` with `airtouch5-controller-webui` but has no
 discovery timeout (there is no console to discover). Use it to try the
 interface, demo it, or develop UI changes without hardware.
 
@@ -162,7 +162,7 @@ left untouched.
 
 Both programs are disabled by default. Enable them and pick presets in the UI;
 settings are saved to the `--automation-config` file (defaulting to the XDG
-config dir, e.g. `~/.config/aircon/automation.json`)
+config dir, e.g. `~/.config/airtouch5-controller-webui/automation.json`)
 and reloaded on startup. Away/Sleep AC states are never touched -- only ACs
 that are `On` get turned off.
 
@@ -172,7 +172,7 @@ that are `On` get turned off.
   Discovery retries with an exponential backoff and reconnects automatically
   once it is back; the cards keep showing the last-known state.
 - **A control silently does nothing for a while then recovers.** The console
-  can occasionally hang on a single request. `aircon` aborts any console call
+  can occasionally hang on a single request. `airtouch5-controller-webui` aborts any console call
   that takes longer than 10 seconds, drops the connection, and reconnects, so
   the UI un-sticks itself instead of wedging forever. Check the logs for the
   last interaction before the stall.

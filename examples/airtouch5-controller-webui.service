@@ -1,0 +1,103 @@
+# airtouch5-controller-webui.service
+#
+# Example systemd unit for the AirTouch 5 web UI. Copy to
+# /etc/systemd/system/ (or ~/.config/systemd/user/ for a user service) and
+# adjust the ExecStart path / env vars to taste.
+#
+# Install:
+#   1. Build and install the binary:
+#        cargo build --release
+#        sudo install -m 0755 target/release/airtouch5-controller-webui \
+#          /usr/local/bin/airtouch5-controller-webui
+#   2. Create the service user (static, so its state dir is stable across
+#      reboots -- needed to persist the automation config):
+#        sudo useradd --system --no-create-home --shell /usr/sbin/nologin \
+#          airtouch5
+#   3. Copy this unit file:
+#        sudo install -m 0644 examples/airtouch5-controller-webui.service \
+#          /etc/systemd/system/airtouch5-controller-webui.service
+#   4. Reload systemd and enable + start it:
+#        sudo systemctl daemon-reload
+#        sudo systemctl enable --now airtouch5-controller-webui
+#   5. Check it is running and view logs:
+#        systemctl status airtouch5-controller-webui
+#        journalctl -u airtouch5-controller-webui -f
+#
+# Configuration: every CLI flag has an AIRTOUCH5_CONTROLLER_WEBUI_* env var.
+# Override any of them below with Environment= lines. The defaults match the
+# binary's own defaults (bind 0.0.0.0:3000, 3s discovery, 60s automation tick).
+#   AIRTOUCH5_CONTROLLER_WEBUI_LISTEN              -- bind addr (default 0.0.0.0:3000)
+#   AIRTOUCH5_CONTROLLER_WEBUI_DISCOVERY_TIMEOUT_MS -- UDP discovery wait (default 3000)
+#   AIRTOUCH5_CONTROLLER_WEBUI_AUTOMATION_TICK_SECS -- automation eval tick (default 60; 0 = off)
+#   AIRTOUCH5_CONTROLLER_WEBUI_AUTOMATION_CONFIG    -- automation config file path
+#   AIRTOUCH5_CONTROLLER_WEBUI_LOG / RUST_LOG       -- tracing filter (default ...=info,tower_http=info)
+
+[Unit]
+Description=AirTouch 5 web UI
+Documentation=https://github.com/mason-larobina/airtouch5-controller-webui
+# The app discovers the console via UDP, so it needs the network up.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=airtouch5
+Group=airtouch5
+
+# /var/lib/airtouch5 is created by systemd and owned by the service user.
+# The automation config is persisted here so toggles survive restarts.
+StateDirectory=airtouch5
+Environment=AIRTOUCH5_CONTROLLER_WEBUI_AUTOMATION_CONFIG=/var/lib/airtouch5/automation.json
+
+# --- Runtime options (tweak as needed) -------------------------------------
+# ExecStart can also pass flags directly, e.g. --bind 127.0.0.1:3000.
+# Env vars are the equivalent of the long flags; see the header comment.
+ExecStart=/usr/local/bin/airtouch5-controller-webui
+
+# --- Restart policy --------------------------------------------------------
+Restart=on-failure
+RestartSec=5
+
+# --- Hardening -------------------------------------------------------------
+# No capabilities needed: the app listens on port 3000 (>1024) and does UDP
+# discovery + a TCP console connection, all as an unprivileged user.
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+# Read-only filesystem except the state dir (handled by StateDirectory above)
+# and /tmp / /var/tmp (PrivateTmp gives a private, writable /tmp).
+ProtectSystem=strict
+PrivateTmp=yes
+ReadWritePaths=/var/lib/airtouch5
+
+# Network: keep real access (the app does UDP discovery), but hide /home and
+# other users' processes.
+ProtectHome=yes
+ProtectProc=invisible
+PrivateDevices=yes
+
+# Kernel protections.
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+
+# Restrict to the syscall set a typical service needs; deny the rest.
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RemoveIPC=yes
+
+# Only the address families the app uses: UDP/TCP for the console and HTTP.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

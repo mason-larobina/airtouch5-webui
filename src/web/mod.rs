@@ -4,14 +4,12 @@ pub mod error;
 pub mod handlers;
 pub mod log;
 pub mod sse;
+pub mod static_assets;
 pub mod state;
 pub mod theme;
 
 use axum::Router;
 use axum::routing::{get, post};
-use tower::ServiceBuilder;
-use tower_http::services::ServeDir;
-use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::automation::AutomationStore;
@@ -24,22 +22,6 @@ pub fn build_router(manager: ManagerHandle, automation: AutomationStore) -> Rout
         manager,
         automation,
     };
-
-    // Static vendor assets (htmx + sse extension) served with a long-immutable
-    // cache. The versioned filenames make this safe.
-    let vendor = ServiceBuilder::new()
-        .layer(SetResponseHeaderLayer::if_not_present(
-            axum::http::header::CACHE_CONTROL,
-            axum::http::HeaderValue::from_static("public, max-age=31536000, immutable"),
-        ))
-        .service(ServeDir::new("static/vendor"));
-
-    // Site stylesheet served from the static css directory.
-    let css = ServeDir::new("static/css");
-
-    // Icon assets (e.g. the low-battery sensor indicator) served from the
-    // static icons directory.
-    let icons = ServeDir::new("static/icons");
 
     Router::new()
         // Pages
@@ -95,12 +77,12 @@ pub fn build_router(manager: ManagerHandle, automation: AutomationStore) -> Rout
         .route("/ac/{id}/mode", post(handlers::ac::mode))
         .route("/ac/{id}/fan", post(handlers::ac::fan))
         .route("/ac/{id}/setpoint", post(handlers::ac::setpoint))
-        // Vendor assets (versioned, immutable cache)
-        .nest_service("/vendor", vendor)
-        // Stylesheet
-        .nest_service("/css", css)
-        // Icon assets
-        .nest_service("/icons", icons)
+        // Static assets (embedded in the binary at compile time via
+        // include_bytes!; see src/web/static_assets.rs). Vendor files are
+        // versioned and cached long-immutable.
+        .route("/vendor/{file}", get(static_assets::vendor))
+        .route("/css/{file}", get(static_assets::css))
+        .route("/icons/{file}", get(static_assets::icons))
         // Interaction logging: control actions at info (ip + action + result),
         // everything else at debug. Applied as the outermost layer so its
         // elapsed time covers the whole request.

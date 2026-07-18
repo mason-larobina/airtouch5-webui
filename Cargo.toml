@@ -1,5 +1,5 @@
 [package]
-name = "aircon"
+name = "airtouch5-controller-webui"
 version = "0.1.0"
 edition = "2024"
 
@@ -7,8 +7,7 @@ edition = "2024"
 airtouch5 = { path = "airtouch5", features = ["control"] }
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "time", "sync"] }
-tower = "0.5"
-tower-http = { version = "0.6", features = ["fs", "trace", "set-header"] }
+tower-http = { version = "0.6", features = ["trace"] }
 askama = "0.12"
 askama_axum = "0.4"
 tracing = "0.1"

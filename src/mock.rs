@@ -1,4 +1,4 @@
-//! In-memory mock AirTouch 5 controller for e2e tests and the `aircon-mock`
+//! In-memory mock AirTouch 5 controller for e2e tests and the `airtouch5-controller-webui-mock`
 //! binary (manual UI dev without a console).
 //!
 //! The mock implements the same `ManagerHandle` contract the real connection
@@ -77,7 +77,7 @@ impl MockController {
 }
 
 /// Build a representative initial snapshot (one AC, six zones) mirroring the
-/// static mockup. Handy for the `aircon-mock` binary and as a test fixture.
+/// static mockup. Handy for the `airtouch5-controller-webui-mock` binary and as a test fixture.
 pub fn sample_snapshot() -> Snapshot {
     let console = snapshot::ConsoleInfo {
         name: "LivingRoom-AT5".to_string(),

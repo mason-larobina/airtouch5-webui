@@ -10,10 +10,10 @@ use std::time::Duration;
 
 use futures_util::StreamExt;
 
-use aircon::automation::AutomationConfig;
-use aircon::manager::snapshot::{ControlModeView, ZonePowerView};
-use aircon::mock::{self, MockController};
-use aircon::web;
+use airtouch5_controller_webui::automation::AutomationConfig;
+use airtouch5_controller_webui::manager::snapshot::{ControlModeView, ZonePowerView};
+use airtouch5_controller_webui::mock::{self, MockController};
+use airtouch5_controller_webui::web;
 
 /// Per-test hard timeout. Tests against the mock controller are instant; this is
 /// a safety net against accidental hangs (e.g. an SSE read that never completes).
@@ -22,7 +22,7 @@ const TEST_TIMEOUT: Duration = Duration::from_secs(15);
 /// Spawn the mock controller behind the real router on an ephemeral port.
 async fn spawn_server() -> (SocketAddr, MockController) {
     let (manager, mock_ctrl) = mock::spawn_mock_controller(mock::sample_snapshot());
-    let automation = aircon::automation::AutomationStore::new(AutomationConfig::default());
+    let automation = airtouch5_controller_webui::automation::AutomationStore::new(AutomationConfig::default());
     let app = web::build_router(manager, automation);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
@@ -1697,7 +1697,7 @@ async fn setpoint_off_status_shows_countdown_badge() {
             z.power = ZonePowerView::On;
             z.control_mode = ControlModeView::Temperature;
             z.setpoint = Some(airtouch5::types::Temperature::from_float(23.0));
-            z.sensor = Some(aircon::manager::snapshot::SensorView::Temperature(
+            z.sensor = Some(airtouch5_controller_webui::manager::snapshot::SensorView::Temperature(
                 airtouch5::types::Temperature::from_float(22.0),
             ));
             let ac = s.acs.get_mut(&0).unwrap();
@@ -1770,7 +1770,7 @@ async fn setpoint_off_status_shows_mode_note_when_not_heating_or_cooling() {
             z.power = ZonePowerView::On;
             z.control_mode = ControlModeView::Temperature;
             z.setpoint = Some(airtouch5::types::Temperature::from_float(23.0));
-            z.sensor = Some(aircon::manager::snapshot::SensorView::Temperature(
+            z.sensor = Some(airtouch5_controller_webui::manager::snapshot::SensorView::Temperature(
                 airtouch5::types::Temperature::from_float(22.0),
             ));
             let ac = s.acs.get_mut(&0).unwrap();
@@ -1984,7 +1984,7 @@ async fn theme_cookie_round_trip() {
     capped(async {
         let (addr, _m) = spawn_server().await;
 
-        // No cookie -> the default theme (midnight) is rendered.
+        // No cookie -> the default theme (daylight) is rendered.
         let body = client()
             .get(format!("http://{addr}/"))
             .send()
@@ -1994,11 +1994,11 @@ async fn theme_cookie_round_trip() {
             .await
             .unwrap();
         assert!(
-            body.contains(r#"<html lang="en" data-theme="midnight">"#),
+            body.contains(r#"<html lang="en" data-theme="daylight">"#),
             "default data-theme missing"
         );
         assert!(
-            body.contains(r##"<meta name="theme-color" content="#0f1115">"##),
+            body.contains(r##"<meta name="theme-color" content="#eef1f5">"##),
             "default theme-color missing"
         );
         // Every theme gets a selector button.
@@ -2058,7 +2058,7 @@ async fn theme_cookie_round_trip() {
             .text()
             .await
             .unwrap();
-        assert!(body.contains(r#"data-theme="midnight""#));
+        assert!(body.contains(r#"data-theme="daylight""#));
         let resp = client()
             .post(format!("http://{addr}/theme"))
             .form(&[("name", "bogus")])
@@ -2073,7 +2073,7 @@ async fn theme_cookie_round_trip() {
             .unwrap()
             .to_string();
         assert!(
-            set_cookie.contains("theme=midnight"),
+            set_cookie.contains("theme=daylight"),
             "bogus theme should sanitize to default, got: {set_cookie}"
         );
     })

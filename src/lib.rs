@@ -1,4 +1,4 @@
-//! aircon: a small web server wrapping the [`airtouch5`] crate.
+//! airtouch5-controller-webui: a small web server wrapping the [`airtouch5`] crate.
 //!
 //! Discovers the AirTouch 5 console on the LAN, exposes its state, and lets you
 //! control AC units and zones from a browser UI built with htmx, live-updated
@@ -15,13 +15,13 @@
 //!   hard-coded programs (setpoint auto-off, idle auto-off) on a tick and
 //!   turns ACs off, plus the shared, JSON-persisted config store.
 //! - [`mock`] -- an in-memory controller implementing the same `ManagerHandle`
-//!   contract, for e2e tests and the `aircon-mock` binary (manual UI dev
+//!   contract, for e2e tests and the `airtouch5-controller-webui-mock` binary (manual UI dev
 //!   without a console).
 //! - [`web`] -- the axum router; [`web::build_router`] is agnostic to whether a
 //!   real manager or a mock controller produced the `ManagerHandle`.
 //! - [`config`], [`airtouch`], [`templates`] -- support modules.
 //!
-//! The two binaries (`aircon`, real; `aircon-mock`, mock) are thin entrypoints
+//! The two binaries (`airtouch5-controller-webui`, real; `airtouch5-controller-webui-mock`, mock) are thin entrypoints
 //! that parse CLI args, spawn the appropriate controller, and call [`serve`].
 
 pub mod airtouch;

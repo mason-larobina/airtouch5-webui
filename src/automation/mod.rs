@@ -61,12 +61,12 @@ pub const DEFAULT_SETPOINT_HOLD: Duration = Duration::from_secs(15 * 60);
 /// Default idle auto-off timeout.
 pub const DEFAULT_IDLE_TIMEOUT: Duration = Duration::from_secs(30 * 60);
 
-/// The XDG-based default config path: `$XDG_CONFIG_HOME/aircon/automation.json`
-/// (falling back to `~/.config/aircon/automation.json` when `XDG_CONFIG_HOME`
+/// The XDG-based default config path: `$XDG_CONFIG_HOME/airtouch5-controller-webui/automation.json`
+/// (falling back to `~/.config/airtouch5-controller-webui/automation.json` when `XDG_CONFIG_HOME`
 /// is unset). Returns `None` only if no home directory can be determined.
 /// Overridden by the `--automation-config` flag in both binaries.
 pub fn default_config_path() -> Option<PathBuf> {
-    dirs::config_dir().map(|d| d.join("aircon").join("automation.json"))
+    dirs::config_dir().map(|d| d.join("airtouch5-controller-webui").join("automation.json"))
 }
 
 /// Configuration for the two automation programs. Persisted as JSON when the
@@ -313,7 +313,7 @@ impl AutomationStore {
             return Ok(());
         };
         // Ensure the parent directory exists (the XDG default lives under
-        // `~/.config/aircon`, which may not exist on a fresh install).
+        // `~/.config/airtouch5-controller-webui`, which may not exist on a fresh install).
         if let Some(parent) = path.parent()
             && !parent.as_os_str().is_empty()
         {
@@ -899,7 +899,7 @@ mod tests {
     fn store_update_persists_to_file() {
         let dir = std::env::temp_dir();
         let path = dir.join(format!(
-            "aircon-automation-test-{}-{}.json",
+            "airtouch5-controller-webui-automation-test-{}-{}.json",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)

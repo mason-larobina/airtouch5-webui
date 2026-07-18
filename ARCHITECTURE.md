@@ -1,9 +1,9 @@
-# Architecture -- `aircon`
+# Architecture -- `airtouch5-controller-webui`
 
 This document is for contributors. For user-facing usage see **README.md**.
 
-`aircon` is a library crate plus two thin binaries (`aircon` for a real
-AirTouch 5 console, `aircon-mock` for an in-memory controller) that serve a
+`airtouch5-controller-webui` is a library crate plus two thin binaries (`airtouch5-controller-webui` for a real
+AirTouch 5 console, `airtouch5-controller-webui-mock` for an in-memory controller) that serve a
 server-rendered web UI over [htmx](https://htmx.org) with live updates pushed
 over Server-Sent Events (SSE). It wraps the
 [`airtouch5`](https://codeberg.org/kbriggs/airtouch5) crate.
@@ -20,7 +20,7 @@ airtouch5 = { version = "0.2", features = ["control"] }   # control enables cont
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread","macros","signal","time","sync"] }
 tower = "0.5"
-tower-http = { version = "0.6", features = ["fs","trace","set-header"] }   # ServeDir + tracing + cache header
+tower-http = { version = "0.6", features = ["trace"] }   # request tracing
 askama = "0.12"            # compile-time Jinja-like templates
 askama_axum = "0.4"        # IntoResponse for askama
 tracing, tracing-subscriber (env-filter)
@@ -40,8 +40,14 @@ path in its `<script src=...>`. The htmx `sse` extension must load after core
 htmx; fragment swapping over SSE needs `hx-ext="sse"`, `sse-connect`, and
 `sse-swap`.
 
-The site stylesheet `static/css/app.css` is served from `/css` (a plain
-`ServeDir`, no immutable cache) and linked from `base.html`.
+The site stylesheet `static/css/app.css` is served from `/css` and linked from
+`base.html`. The icon `static/icons/battery-low.svg` is served from `/icons`.
+
+All static assets (vendor JS, CSS, icons) are embedded into the binary at
+compile time via `include_bytes!` (see `src/web/static_assets.rs`), so the
+server is fully standalone: no `static/` directory needs to exist on disk at
+runtime. Vendor files keep their long-immutable cache; CSS and icons are
+served uncached.
 
 ## 2. Module layout
 
@@ -62,27 +68,30 @@ The crate (`src/lib.rs`) exposes:
   background tick; turns ACs off via `Command::ControlAc`. Config is shared
   with the web layer and optionally persisted to JSON.
 - `web/` -- the axum layer.
-  - `mod.rs` -- `build_router()`, the route table, the vendor `ServeDir` with
-    its immutable cache layer, the trace + request-log middleware.
+  - `mod.rs` -- `build_router()`, the route table, the trace + request-log
+    middleware, and the `/vendor`, `/css`, `/icons` routes (delegating to
+    `static_assets.rs`).
   - `state.rs` -- `AppState { manager, automation }`.
   - `error.rs` -- `AppError` -> 422 HTML fragment response.
   - `log.rs` -- request-log middleware (control actions at `info`, the rest
     at `debug`).
   - `sse.rs` -- `/events`: the SSE stream with per-id dirty diffing.
+  - `static_assets.rs` -- vendor JS / CSS / icons embedded into the binary via
+    `include_bytes!` and served from `/vendor`, `/css`, `/icons`.
   - `handlers/` -- `pages.rs` (`GET /`, `GET /partials/*`, `POST /refresh`),
     `zone.rs` (`POST /zone/*` and bulk `/zones/*`), `ac.rs` (`POST /ac/*`),
     `automation.rs` (`POST /automation/*`).
 - `mock.rs` -- an in-memory controller implementing the same `ManagerHandle`
-  contract, used by `aircon-mock` and the e2e tests.
+  contract, used by `airtouch5-controller-webui-mock` and the e2e tests.
 - `templates.rs` -- the askama `Template` structs (one per template file) and
   the `render_*` helpers the handlers and SSE stream call.
 - `config.rs` -- `Config { listen, discovery_timeout, log_level }`.
 
 Binaries:
 
-- `src/main.rs` -- `aircon`: clap CLI, tracing init, `spawn_manager`, load the
+- `src/main.rs` -- `airtouch5-controller-webui`: clap CLI, tracing init, `spawn_manager`, load the
   automation store, `spawn_automation`, `serve`.
-- `src/bin/aircon-mock.rs` -- `aircon-mock`: clap CLI, tracing init,
+- `src/bin/airtouch5-controller-webui-mock.rs` -- `airtouch5-controller-webui-mock`: clap CLI, tracing init,
   `spawn_mock_controller(sample_snapshot())`, load the automation store,
   `spawn_automation`, `serve`.
 
@@ -472,7 +481,7 @@ diff stream -- it only changes through these POSTs.
 `MockController` lets tests inject arbitrary live changes (as if someone
 adjusted a zone at the wall console) via `mutate(FnOnce(&mut Snapshot))`, which
 exercises the SSE dirty-diff path. `sample_snapshot()` builds the one-AC /
-six-zone fixture used by `aircon-mock` and the test suite.
+six-zone fixture used by `airtouch5-controller-webui-mock` and the test suite.
 
 ## 8. Logging and request middleware
 
@@ -557,7 +566,7 @@ persist to the configured JSON file atomically (write-to-tmp + rename), and
 the parent directory is created on first write. On
 startup `AutomationStore::load(path)` reads the file back; the path is the
 `--automation-config` flag value, or the XDG default
-(`$XDG_CONFIG_HOME/aircon/automation.json`) when the flag is unset. tests use
+(`$XDG_CONFIG_HOME/airtouch5-controller-webui/automation.json`) when the flag is unset. tests use
 `AutomationStore::new(config)` for an in-memory, non-persisting store. Defaults:
 both programs disabled, 15-minute setpoint hold, 30-minute idle timeout.
 

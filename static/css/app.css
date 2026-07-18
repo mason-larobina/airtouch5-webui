@@ -1,4 +1,49 @@
 :root {
+  --bg: #eef1f5;
+  --panel: #ffffff;
+  --panel-2: #f1f4f8;
+  --panel-3: #e6ebf2;
+  --border: #c7d0dc;
+  --text: #1c2433;
+  --muted: #5a6675;
+  --accent: #1c6fe0;
+  --accent-dim: #d6e6fc;
+  --good: #1e9e62;
+  /* Tinted fill for "on/enabled" states (program toggle, status badge): the
+     theme's --good at low alpha, so it sits lightly on the panel. */
+  --good-dim: rgba(30, 158, 98, 0.14);
+  /* Tinted fill for the amber "note" status badge (setpoint auto-off not
+     active for the current mode), mirroring --good-dim. */
+  --warn-dim: rgba(176, 120, 18, 0.14);
+  --warn: #b07812;
+  --bad: #cf4040;
+  --turbo: #8b53d9;
+  --radius: 10px;
+  /* Touch-target metrics shared by every button so they are easy to tap
+     on mobile. Bump these two values to resize all buttons at once. */
+  --btn-h: 44px;
+  --btn-step-w: 44px;
+  --shadow: 0 1px 3px rgba(25, 35, 55, 0.18);
+  /* Border thickness for every panel and control; the contrast theme
+     bumps this for extra punch. */
+  --border-w: 1px;
+  /* Text color on the selected-control fill (--accent-dim). Themes whose
+     selected fill is dark or solid (contrast) flip this to white. */
+  --sel-text: var(--text);
+  --mono:
+    ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas,
+    monospace;
+}
+/* Color themes. The plain :root block above is the default theme (daylight);
+   every other theme is a custom-property override selected by the data-theme
+   attribute on <html>, which the server renders from the `theme` cookie (so
+   there is no flash of the wrong theme) and the footer theme selector swaps
+   live. Because overrides cascade by attribute specificity, each block only
+   needs to redefine the tokens it changes -- but redefining the full palette
+   keeps each theme self-contained and easy to tune. Keep the theme names and
+   --bg values in sync with THEMES in src/web/theme.rs (the server uses --bg
+   for <meta name="theme-color">). */
+:root[data-theme="midnight"] {
   --bg: #0f1115;
   --panel: #171a21;
   --panel-2: #1e222b;
@@ -13,57 +58,12 @@
      against midnight's blue palette, mirroring how the ember theme reuses
      its warm-orange accent for the same role. */
   --good: #4f9dff;
-  /* Tinted fill for "on/enabled" states (program toggle, status badge): the
-     theme's --good at low alpha, so it sits lightly on the panel. */
   --good-dim: rgba(79, 157, 255, 0.14);
-  /* Tinted fill for the amber "note" status badge (setpoint auto-off not
-     active for the current mode), mirroring --good-dim. */
   --warn-dim: rgba(240, 169, 59, 0.14);
   --warn: #f0a93b;
   --bad: #e25b5b;
   --turbo: #b07df0;
-  --radius: 10px;
-  /* Touch-target metrics shared by every button so they are easy to tap
-     on mobile. Bump these two values to resize all buttons at once. */
-  --btn-h: 44px;
-  --btn-step-w: 44px;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-  /* Border thickness for every panel and control; the contrast theme
-     bumps this for extra punch. */
-  --border-w: 1px;
-  /* Text color on the selected-control fill (--accent-dim). Themes whose
-     selected fill is dark or solid (contrast) flip this to white. */
-  --sel-text: var(--text);
-  --mono:
-    ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas,
-    monospace;
-}
-/* Color themes. The plain :root block above is the default theme (midnight);
-   every other theme is a custom-property override selected by the data-theme
-   attribute on <html>, which the server renders from the `theme` cookie (so
-   there is no flash of the wrong theme) and the footer theme selector swaps
-   live. Because overrides cascade by attribute specificity, each block only
-   needs to redefine the tokens it changes -- but redefining the full palette
-   keeps each theme self-contained and easy to tune. Keep the theme names and
-   --bg values in sync with THEMES in src/web/theme.rs (the server uses --bg
-   for <meta name="theme-color">). */
-:root[data-theme="daylight"] {
-  --bg: #eef1f5;
-  --panel: #ffffff;
-  --panel-2: #f1f4f8;
-  --panel-3: #e6ebf2;
-  --border: #c7d0dc;
-  --text: #1c2433;
-  --muted: #5a6675;
-  --accent: #1c6fe0;
-  --accent-dim: #d6e6fc;
-  --good: #1e9e62;
-  --good-dim: rgba(30, 158, 98, 0.14);
-  --warn-dim: rgba(176, 120, 18, 0.14);
-  --warn: #b07812;
-  --bad: #cf4040;
-  --turbo: #8b53d9;
-  --shadow: 0 1px 3px rgba(25, 35, 55, 0.18);
 }
 /* Terminal: a phosphor-green-on-black CRT look. Distinct from the other
    themes by structure as well as colour -- the whole UI switches to the
