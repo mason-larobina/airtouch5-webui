@@ -22,6 +22,12 @@
   --btn-h: 44px;
   --btn-step-w: 44px;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  /* Border thickness for every panel and control; the contrast theme
+     bumps this for extra punch. */
+  --border-w: 1px;
+  /* Text color on the selected-control fill (--accent-dim). Themes whose
+     selected fill is dark or solid (contrast) flip this to white. */
+  --sel-text: var(--text);
   --mono:
     ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas,
     monospace;
@@ -84,22 +90,51 @@
   --bad: #e25b5b;
   --turbo: #c490f0;
 }
+/* Contrast: strict black-on-white grayscale -- every color is white, gray,
+   or black. Selected and "on" controls are inverted (a solid black fill
+   with white text) against the normal black-on-white look, and borders are
+   a step thicker. --accent-dim doubles as the selected-control fill, so it
+   is solid black here; --good-dim stays a light gray wash for the tinted
+   status badges, while filled on-states draw --good (black). */
 :root[data-theme="contrast"] {
-  --bg: #000000;
-  --panel: #000000;
-  --panel-2: #101010;
-  --panel-3: #1a1a1a;
-  --border: #f2f2f2;
-  --text: #ffffff;
-  --muted: #d6d6d6;
-  --accent: #ffe600;
-  --accent-dim: #3d3800;
-  --good: #00e676;
-  --good-dim: rgba(0, 230, 118, 0.18);
-  --warn: #ffb300;
-  --bad: #ff5252;
-  --turbo: #e08cff;
+  --bg: #ffffff;
+  --panel: #ffffff;
+  --panel-2: #f0f0f0;
+  --panel-3: #e5e5e5;
+  --border: #000000;
+  --text: #000000;
+  --muted: #595959;
+  --accent: #000000;
+  --accent-dim: #000000;
+  --good: #000000;
+  --good-dim: rgba(0, 0, 0, 0.08);
+  --warn: #595959;
+  --bad: #000000;
+  --turbo: #595959;
   --shadow: none;
+  --border-w: 2px;
+  --sel-text: #ffffff;
+}
+/* Contrast-only element tweaks the tokens cannot express: the enabled
+   program toggle inverts to a black slab, the disconnected alarm stays a
+   loud slab but with readable white text and dot, and the on/turbo toggle
+   glows lose their color. */
+:root[data-theme="contrast"] .program-toggle.on {
+  background: #000000;
+  border-color: #000000;
+  color: #ffffff;
+}
+:root[data-theme="contrast"] #connection-state.disconnected {
+  color: #ffffff;
+}
+:root[data-theme="contrast"] #connection-state.disconnected .dot {
+  background: rgba(255, 255, 255, 0.55);
+}
+:root[data-theme="contrast"] .zone-toggle.on {
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.45);
+}
+:root[data-theme="contrast"] .zone-toggle.turbo {
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
 }
 * {
   box-sizing: border-box;
@@ -139,7 +174,7 @@ h1 {
    --good border and text. Disconnected stays a loud solid-red slab -- it is
    an alarm and should shout. */
 #connection-state {
-  border: 1px solid var(--good);
+  border: var(--border-w) solid var(--good);
   border-radius: var(--radius);
   padding: 8px 14px;
   margin-bottom: 12px;
@@ -167,7 +202,7 @@ h1 {
 }
 #system {
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 14px 16px;
@@ -203,7 +238,7 @@ h1 {
 #system .refresh {
   background: var(--panel-3);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   border-radius: 8px;
   padding: 10px 16px;
   font-size: 14px;
@@ -238,7 +273,7 @@ h1 {
 }
 .ac-card {
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 16px;
@@ -266,7 +301,7 @@ h1 {
 .segmented {
   display: flex;
   background: var(--panel-2);
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -280,7 +315,7 @@ h1 {
   font-weight: 600;
   padding: 10px 8px;
   cursor: pointer;
-  border-right: 1px solid var(--border);
+  border-right: var(--border-w) solid var(--border);
 }
 .segmented button:last-child {
   border-right: 0;
@@ -307,7 +342,7 @@ h1 {
 }
 .int-auto {
   appearance: none;
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   background: var(--panel-2);
   color: var(--muted);
   border-radius: 8px;
@@ -361,7 +396,7 @@ h1 {
 }
 .btn {
   appearance: none;
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   background: var(--panel-3);
   color: var(--text);
   border-radius: 7px;
@@ -386,16 +421,17 @@ h1 {
 }
 /* Consolidated "selected/active" treatment for every toggle button in the
    UI (AC power, AC mode, fan speed, zone control mode): one accent-dim
-   fill with full text color and an accent border. The selected look is
-   now identical whether it is a segmented cell, a power button, or a
-   zone mode toggle -- no more per-widget themes. */
+   fill with an accent border and --sel-text on top (normally the full text
+   color; the contrast theme inverts it to white on its solid-black fill).
+   The selected look is now identical whether it is a segmented cell, a
+   power button, or a zone mode toggle -- no more per-widget themes. */
 .segmented button.active,
 .mode-toggle button.active,
 .int-auto.active,
 .btn.selected {
   background: var(--accent-dim);
   border-color: var(--accent);
-  color: var(--text);
+  color: var(--sel-text);
 }
 .btn.selected:hover {
   border-color: var(--accent);
@@ -440,7 +476,7 @@ h1 {
 }
 .zone-list {
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   overflow: hidden;
@@ -458,7 +494,7 @@ h1 {
   gap: 12px;
   flex-wrap: wrap;
   padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: var(--border-w) solid var(--border);
   background: var(--panel-2);
 }
 .bulk-bar .bulk-mode {
@@ -503,7 +539,7 @@ h1 {
   align-items: center;
   gap: 8px;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: var(--border-w) solid var(--border);
 }
 .zone-row:last-child {
   border-bottom: 0;
@@ -553,7 +589,7 @@ h1 {
   border-radius: 50%;
   flex: none;
   cursor: pointer;
-  border: 2px solid var(--muted);
+  border: calc(var(--border-w) + 1px) solid var(--muted);
   background: transparent;
   padding: 0;
 }
@@ -590,7 +626,7 @@ h1 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   background: var(--panel-2);
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   border-radius: 7px;
   overflow: hidden;
 }
@@ -628,7 +664,7 @@ h1 {
 }
 .zone-controls .val {
   appearance: none;
-  border: 1px solid transparent;
+  border: var(--border-w) solid transparent;
   background: transparent;
   border-radius: 7px;
   font-family: var(--mono);
@@ -668,7 +704,7 @@ h1 {
   border-radius: 5px;
   background: var(--panel-3);
   color: var(--muted);
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
 }
 .flag.warn {
   color: var(--warn);
@@ -686,7 +722,7 @@ h1 {
 footer {
   margin-top: 24px;
   padding-top: 12px;
-  border-top: 1px dashed var(--border);
+  border-top: var(--border-w) dashed var(--border);
   text-align: center;
 }
 /* Theme selector: a centered row of pill buttons, one per available theme.
@@ -715,7 +751,7 @@ footer {
 }
 .theme-btn {
   appearance: none;
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   background: var(--panel);
   color: var(--muted);
   border-radius: 999px;
@@ -735,7 +771,7 @@ footer {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   background: linear-gradient(
     135deg,
     var(--dot-bg) 0 50%,
@@ -759,8 +795,8 @@ footer {
   --dot-accent: #ff9e4f;
 }
 .theme-btn[data-set-theme="contrast"] {
-  --dot-bg: #000000;
-  --dot-accent: #ffe600;
+  --dot-bg: #ffffff;
+  --dot-accent: #000000;
 }
 .theme-btn:hover:not(.active) {
   border-color: var(--accent);
@@ -769,7 +805,7 @@ footer {
 .theme-btn.active {
   background: var(--accent-dim);
   border-color: var(--accent);
-  color: var(--text);
+  color: var(--sel-text);
 }
 footer a {
   font-family: var(--mono);
@@ -790,7 +826,7 @@ footer a:hover {
 }
 .program-card {
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 14px 16px;
@@ -825,7 +861,7 @@ footer a:hover {
    flips the state. */
 .program-toggle {
   appearance: none;
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   border-radius: 7px;
   padding: 8px 14px;
   font-size: 13px;
@@ -876,7 +912,7 @@ footer a:hover {
 .program-param .btn.preset.active {
   background: var(--accent-dim);
   border-color: var(--accent);
-  color: var(--text);
+  color: var(--sel-text);
 }
 /* Live status line for the setpoint auto-off card: a green badge while the
    hold countdown is running ("turning off in N min") and a muted badge while
@@ -887,7 +923,7 @@ footer a:hover {
   font-family: var(--mono);
   padding: 8px 10px;
   border-radius: 7px;
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   line-height: 1.4;
 }
 .program-status.ok {

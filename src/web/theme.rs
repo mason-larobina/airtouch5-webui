@@ -46,7 +46,7 @@ pub const THEMES: &[Theme] = &[
     Theme {
         name: "contrast",
         label: "Contrast",
-        bg: "#000000",
+        bg: "#ffffff",
     },
 ];
 
