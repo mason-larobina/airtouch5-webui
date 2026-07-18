@@ -101,9 +101,12 @@ interface, demo it, or develop UI changes without hardware.
 
 The page is laid out top to bottom:
 
-- **Connection banner.** A green "Connected" banner turns red and reads
-  "Disconnected -- reconnecting..." if the console is lost; the server keeps
-  the last-known state visible underneath while it reconnects.
+- **Controller card.** At the bottom: the console name with a `[refresh]`
+  button, the console metadata fields (address, AirTouch ID, console ID,
+  firmware, update, AC units, zones), and a connected/disconnected status
+  line. The status turns red and reads "Disconnected -- reconnecting..." if
+  the console is lost; the server keeps the last-known state visible
+  underneath while it reconnects.
 - **AC unit cards.** One per AC. Each shows the unit name and controls for
   power, mode, fan speed, and setpoint, plus the current ("now") temperature
   and the setpoint value. Unsupported modes and fan speeds are hidden.
@@ -111,9 +114,9 @@ The page is laid out top to bottom:
   one row per zone. Each row shows the zone name, its sensor reading (or "no
   sensor" / "sensor n/a"), a circular power toggle, a `%` / `Temp` mode switch,
   and a `+` / `-` stepper with the current value.
-- **Automation.** Below the zones list, a card per program with an On/Off
-  enable toggle and a row of parameter presets (hold time / idle timeout).
-  Both programs turn the **AC units** off when they fire.
+- **Automation.** Below the zones list, a card per program with the parameter
+  presets (hold time / idle timeout) and an On/Off enable toggle together in
+  the card header. Both programs turn the **AC units** off when they fire.
 
 ### How control works
 

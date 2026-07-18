@@ -62,21 +62,40 @@
   --turbo: #8b53d9;
   --shadow: 0 1px 3px rgba(25, 35, 55, 0.18);
 }
-:root[data-theme="ocean"] {
-  --bg: #081420;
-  --panel: #0e1f2e;
-  --panel-2: #132739;
-  --panel-3: #193349;
-  --border: #22465f;
-  --text: #e3f1f9;
-  --muted: #7f9cae;
-  --accent: #2fd4c4;
-  --accent-dim: #11424a;
-  --good: #43b581;
-  --good-dim: rgba(67, 181, 129, 0.14);
-  --warn: #f0a93b;
-  --bad: #e25b5b;
-  --turbo: #b07df0;
+/* Terminal: a phosphor-green-on-black CRT look. Distinct from the other
+   themes by structure as well as colour -- the whole UI switches to the
+   monospace stack and every corner goes sharp (border-radius: 0), so it reads
+   as a retro terminal rather than just a recoloured midnight. The accent / good
+   colours are the same bright phosphor green; warn is amber, turbo is cyan,
+   bad stays red. */
+:root[data-theme="terminal"] {
+  --bg: #050a06;
+  --panel: #0a110a;
+  --panel-2: #0e170e;
+  --panel-3: #142014;
+  --border: #214021;
+  --text: #7fd97f;
+  --muted: #4a7a4a;
+  --accent: #4cff5e;
+  --accent-dim: rgba(76, 255, 94, 0.14);
+  --good: #4cff5e;
+  --good-dim: rgba(76, 255, 94, 0.14);
+  --warn: #ffcc55;
+  --warn-dim: rgba(255, 204, 85, 0.14);
+  --bad: #ff5c5c;
+  --turbo: #5cc8ff;
+  --shadow: none;
+}
+/* Structural overrides that make the theme a terminal: monospace everywhere
+   (the body normally inherits the sans stack) and every element sharp-cornered.
+   !important is intentional -- this is a theme-wide structural switch that
+   must win over per-widget radii (the circular zone toggle, pill theme
+   buttons, 8px / 7px panels) regardless of selector specificity. */
+:root[data-theme="terminal"] body {
+  font-family: var(--mono);
+}
+:root[data-theme="terminal"] * {
+  border-radius: 0 !important;
 }
 :root[data-theme="ember"] {
   --bg: #171210;
@@ -88,8 +107,11 @@
   --muted: #ab9a8e;
   --accent: #ff9e4f;
   --accent-dim: #54371f;
-  --good: #43b581;
-  --good-dim: rgba(67, 181, 129, 0.14);
+  /* The shared cool green --good reads as out of place against ember's warm
+     orange palette, so the on/enabled/status "good" colour reuses the theme
+     accent -- a warm orange -- keeping every positive state on-palette. */
+  --good: #ff9e4f;
+  --good-dim: rgba(255, 158, 79, 0.16);
   --warn: #f0a93b;
   --bad: #e25b5b;
   --turbo: #c490f0;
@@ -121,9 +143,10 @@
   --sel-text: #ffffff;
 }
 /* Contrast-only element tweaks the tokens cannot express: the enabled
-   program toggle inverts to a black slab, the disconnected alarm stays a
-   loud slab but with readable white text and dot, and the on/turbo toggle
-   glows lose their color. */
+   program toggle inverts to a black slab and the disconnected alarm stays a
+   loud slab but with readable white text and dot. The colored on/turbo
+   toggle glows are dropped entirely -- a blurred halo reads as smudge on a
+   strict black/white theme, so the toggles stay hard-edged. */
 :root[data-theme="contrast"] .program-toggle.on {
   background: #000000;
   border-color: #000000;
@@ -135,11 +158,9 @@
 :root[data-theme="contrast"] #connection-state.disconnected .dot {
   background: rgba(255, 255, 255, 0.55);
 }
-:root[data-theme="contrast"] .zone-toggle.on {
-  box-shadow: 0 0 6px rgba(0, 0, 0, 0.45);
-}
+:root[data-theme="contrast"] .zone-toggle.on,
 :root[data-theme="contrast"] .zone-toggle.turbo {
-  box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+  box-shadow: none;
 }
 * {
   box-sizing: border-box;
@@ -182,7 +203,6 @@ h1 {
   border: var(--border-w) solid var(--good);
   border-radius: var(--radius);
   padding: 8px 14px;
-  margin-bottom: 12px;
   font-size: 13px;
   display: flex;
   align-items: center;
@@ -811,9 +831,9 @@ footer {
   --dot-bg: #eef1f5;
   --dot-accent: #1c6fe0;
 }
-.theme-btn[data-set-theme="ocean"] {
-  --dot-bg: #081420;
-  --dot-accent: #2fd4c4;
+.theme-btn[data-set-theme="terminal"] {
+  --dot-bg: #050a06;
+  --dot-accent: #4cff5e;
 }
 .theme-btn[data-set-theme="ember"] {
   --dot-bg: #171210;
@@ -863,7 +883,19 @@ footer a:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+}
+/* Hold / timeout presets live in the head now, immediately left of the
+   Enabled/Disabled toggle. They share a flex-none cluster with the toggle so
+   the pair either sits packed against the right edge of the name on wide
+   screens or wraps onto its own line as a unit on narrow ones; the name
+   ellipsises in between. */
+.program-head .program-controls {
+  display: flex;
+  align-items: center;
   gap: 12px;
+  flex: none;
 }
 /* Shares the card-title style with #system .title and .ac-card .name.
    min-width: 0 + nowrap let a long program name ellipsis inside the flex

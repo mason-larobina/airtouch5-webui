@@ -8,14 +8,15 @@
             hx-target="#system">refresh</button>
   </div>
   <div class="meta">
-    <span>addr <b>{{ snapshot.console.addr_str() }}</b></span>
-    <span>id <b>{{ snapshot.console.id_str() }}</b></span>
+    <span>Address <b>{{ snapshot.console.addr_str() }}</b></span>
+    <span>AirTouch ID <b>{{ snapshot.console.id_str() }}</b></span>
     {% if let Some(cid) = snapshot.console.console_id.as_ref() %}
-    <span>console <b>{{ cid }}</b></span>
+    <span>Console ID <b>{{ cid }}</b></span>
     {% endif %}
-    <span>fw <b>{{ snapshot.console.fw_str() }}</b></span>
-    <span>update <b>{{ snapshot.console.update_str() }}</b></span>
-    <span>acs <b>{{ snapshot.console.ac_count }}</b></span>
-    <span>zones <b>{{ snapshot.console.zone_count }}</b></span>
+    <span>Firmware <b>{{ snapshot.console.fw_str() }}</b></span>
+    <span>Update <b>{{ snapshot.console.update_str() }}</b></span>
+    <span>AC units <b>{{ snapshot.console.ac_count }}</b></span>
+    <span>Zones <b>{{ snapshot.console.zone_count }}</b></span>
   </div>
+  {% include "partials/connection_state.html" %}
 </div>

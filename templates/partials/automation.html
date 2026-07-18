@@ -4,12 +4,31 @@
   <div class="program-card" data-program="setpoint-off">
     <div class="program-head">
       <div class="program-name">Setpoint auto-off</div>
+      <div class="program-controls">
+      <div class="program-param">
+        <span class="label">Hold</span>
+        <div class="preset-group">
+          <button type="button" class="btn preset{% if config.setpoint_off_hold_minutes() == 15 %} active{% endif %}"
+                  {% if !config.setpoint_off_enabled %} disabled{% endif %}
+                  hx-post="/automation/setpoint-off/hold" hx-vals='{"mins":"15"}'
+                  hx-target="#automation">15m</button>
+          <button type="button" class="btn preset{% if config.setpoint_off_hold_minutes() == 30 %} active{% endif %}"
+                  {% if !config.setpoint_off_enabled %} disabled{% endif %}
+                  hx-post="/automation/setpoint-off/hold" hx-vals='{"mins":"30"}'
+                  hx-target="#automation">30m</button>
+          <button type="button" class="btn preset{% if config.setpoint_off_hold_minutes() == 60 %} active{% endif %}"
+                  {% if !config.setpoint_off_enabled %} disabled{% endif %}
+                  hx-post="/automation/setpoint-off/hold" hx-vals='{"mins":"60"}'
+                  hx-target="#automation">1h</button>
+        </div>
+      </div>
       <button type="button"
               class="program-toggle{% if config.setpoint_off_enabled %} on{% else %} off{% endif %}"
               aria-pressed="{% if config.setpoint_off_enabled %}true{% else %}false{% endif %}"
               hx-post="/automation/setpoint-off/toggle"
               hx-vals='{"enabled":"{% if config.setpoint_off_enabled %}false{% else %}true{% endif %}"}'
               hx-target="#automation">{% if config.setpoint_off_enabled %}Enabled{% else %}Disabled{% endif %}</button>
+      </div>
     </div>
     <div class="program-desc">
       When every on-zone is in temperature mode and has reached its
@@ -37,35 +56,41 @@
       </div>
       {% endif %}
     {% endif %}
-    <div class="program-param">
-      <span class="label">Hold</span>
-      <div class="preset-group">
-        <button type="button" class="btn preset{% if config.setpoint_off_hold_minutes() == 15 %} active{% endif %}"
-                {% if !config.setpoint_off_enabled %} disabled{% endif %}
-                hx-post="/automation/setpoint-off/hold" hx-vals='{"mins":"15"}'
-                hx-target="#automation">15m</button>
-        <button type="button" class="btn preset{% if config.setpoint_off_hold_minutes() == 30 %} active{% endif %}"
-                {% if !config.setpoint_off_enabled %} disabled{% endif %}
-                hx-post="/automation/setpoint-off/hold" hx-vals='{"mins":"30"}'
-                hx-target="#automation">30m</button>
-        <button type="button" class="btn preset{% if config.setpoint_off_hold_minutes() == 60 %} active{% endif %}"
-                {% if !config.setpoint_off_enabled %} disabled{% endif %}
-                hx-post="/automation/setpoint-off/hold" hx-vals='{"mins":"60"}'
-                hx-target="#automation">1h</button>
-      </div>
-    </div>
   </div>
 
   <!-- Idle auto-off -->
   <div class="program-card" data-program="idle-off">
     <div class="program-head">
       <div class="program-name">Idle auto-off</div>
+      <div class="program-controls">
+      <div class="program-param">
+        <span class="label">Timeout</span>
+        <div class="preset-group">
+          <button type="button" class="btn preset{% if config.idle_off_timeout_minutes() == 15 %} active{% endif %}"
+                  {% if !config.idle_off_enabled %} disabled{% endif %}
+                  hx-post="/automation/idle-off/timeout" hx-vals='{"mins":"15"}'
+                  hx-target="#automation">15m</button>
+          <button type="button" class="btn preset{% if config.idle_off_timeout_minutes() == 30 %} active{% endif %}"
+                  {% if !config.idle_off_enabled %} disabled{% endif %}
+                  hx-post="/automation/idle-off/timeout" hx-vals='{"mins":"30"}'
+                  hx-target="#automation">30m</button>
+          <button type="button" class="btn preset{% if config.idle_off_timeout_minutes() == 60 %} active{% endif %}"
+                  {% if !config.idle_off_enabled %} disabled{% endif %}
+                  hx-post="/automation/idle-off/timeout" hx-vals='{"mins":"60"}'
+                  hx-target="#automation">1h</button>
+          <button type="button" class="btn preset{% if config.idle_off_timeout_minutes() == 120 %} active{% endif %}"
+                  {% if !config.idle_off_enabled %} disabled{% endif %}
+                  hx-post="/automation/idle-off/timeout" hx-vals='{"mins":"120"}'
+                  hx-target="#automation">2h</button>
+        </div>
+      </div>
       <button type="button"
               class="program-toggle{% if config.idle_off_enabled %} on{% else %} off{% endif %}"
               aria-pressed="{% if config.idle_off_enabled %}true{% else %}false{% endif %}"
               hx-post="/automation/idle-off/toggle"
               hx-vals='{"enabled":"{% if config.idle_off_enabled %}false{% else %}true{% endif %}"}'
               hx-target="#automation">{% if config.idle_off_enabled %}Enabled{% else %}Disabled{% endif %}</button>
+      </div>
     </div>
     <div class="program-desc">
       If no control changes happen for the selected period, turn the AC(s)
@@ -79,27 +104,6 @@
       </div>
       {% endif %}
     {% endif %}
-    <div class="program-param">
-      <span class="label">Timeout</span>
-      <div class="preset-group">
-        <button type="button" class="btn preset{% if config.idle_off_timeout_minutes() == 15 %} active{% endif %}"
-                {% if !config.idle_off_enabled %} disabled{% endif %}
-                hx-post="/automation/idle-off/timeout" hx-vals='{"mins":"15"}'
-                hx-target="#automation">15m</button>
-        <button type="button" class="btn preset{% if config.idle_off_timeout_minutes() == 30 %} active{% endif %}"
-                {% if !config.idle_off_enabled %} disabled{% endif %}
-                hx-post="/automation/idle-off/timeout" hx-vals='{"mins":"30"}'
-                hx-target="#automation">30m</button>
-        <button type="button" class="btn preset{% if config.idle_off_timeout_minutes() == 60 %} active{% endif %}"
-                {% if !config.idle_off_enabled %} disabled{% endif %}
-                hx-post="/automation/idle-off/timeout" hx-vals='{"mins":"60"}'
-                hx-target="#automation">1h</button>
-        <button type="button" class="btn preset{% if config.idle_off_timeout_minutes() == 120 %} active{% endif %}"
-                {% if !config.idle_off_enabled %} disabled{% endif %}
-                hx-post="/automation/idle-off/timeout" hx-vals='{"mins":"120"}'
-                hx-target="#automation">2h</button>
-      </div>
-    </div>
   </div>
 
 </div>

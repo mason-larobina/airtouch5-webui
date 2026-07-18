@@ -90,8 +90,10 @@ Templates (`templates/`, askama, configured via `askama.toml`):
 
 - `base.html` -- `<head>`, a `<link>` to `/css/app.css`, htmx + sse script tags.
 - `index.html` -- page shell + SSE bootstrap, includes the partials inline.
-- `partials/connection_state.html` -- `#connection-state` (connected banner).
-- `partials/system.html` -- `#system` (console card + `[refresh]`).
+- `partials/connection_state.html` -- `#connection-state` (connected banner,
+  included at the bottom of `#system`).
+- `partials/system.html` -- `#system` (controller card + `[refresh]`, includes
+  the connected banner and the console metadata fields).
 - `partials/acs.html` -- `#acs` wrapper, includes one `ac.html` per AC.
 - `partials/ac.html` -- `#ac-<id>` (one AC card).
 - `partials/zones.html` -- `#zones` wrapper + the bulk "All zones" bar,

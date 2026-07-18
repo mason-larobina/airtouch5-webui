@@ -34,9 +34,9 @@ pub const THEMES: &[Theme] = &[
         bg: "#eef1f5",
     },
     Theme {
-        name: "ocean",
-        label: "Ocean",
-        bg: "#081420",
+        name: "terminal",
+        label: "Terminal",
+        bg: "#050a06",
     },
     Theme {
         name: "ember",
@@ -76,7 +76,7 @@ mod tests {
 
     #[test]
     fn unknown_theme_falls_back_to_default() {
-        assert_eq!(lookup("ocean").name, "ocean");
+        assert_eq!(lookup("terminal").name, "terminal");
         assert_eq!(lookup("bogus").name, "midnight");
         assert_eq!(lookup("").name, "midnight");
     }

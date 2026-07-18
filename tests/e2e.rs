@@ -1929,7 +1929,7 @@ async fn theme_cookie_round_trip() {
             "default theme-color missing"
         );
         // Every theme gets a selector button.
-        for name in ["midnight", "daylight", "ocean", "ember", "contrast"] {
+        for name in ["midnight", "daylight", "terminal", "ember", "contrast"] {
             assert!(
                 body.contains(&format!(r#"data-set-theme="{name}""#)),
                 "selector button for {name} missing"
@@ -1940,7 +1940,7 @@ async fn theme_cookie_round_trip() {
         // (the client applies the theme itself, hx-swap="none").
         let resp = client()
             .post(format!("http://{addr}/theme"))
-            .form(&[("name", "ocean")])
+            .form(&[("name", "terminal")])
             .send()
             .await
             .unwrap();
@@ -1952,7 +1952,10 @@ async fn theme_cookie_round_trip() {
             .to_str()
             .unwrap()
             .to_string();
-        assert!(set_cookie.contains("theme=ocean"), "cookie: {set_cookie}");
+        assert!(
+            set_cookie.contains("theme=terminal"),
+            "cookie: {set_cookie}"
+        );
         assert!(
             set_cookie.contains("Max-Age=31536000"),
             "cookie: {set_cookie}"

@@ -7,8 +7,6 @@
   </header>
 
   <main hx-ext="sse" sse-connect="/events">
-    {% include "partials/connection_state.html" %}
-
     <section aria-labelledby="acs-label">
       <div class="section-label">
         <h2 id="acs-label">AC unit{% if snapshot.console.ac_count > 1 %}s{% endif %}</h2>
