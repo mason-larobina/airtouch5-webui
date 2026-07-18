@@ -465,8 +465,12 @@ async fn system_off_keeps_zone_controls_working() {
             .await
             .unwrap();
         assert!(
-            ac_body.contains("class=\"btn selected\"\n              hx-post=\"/ac/0/power\" hx-vals='{\"power\":\"off\"}'"),
+            ac_power_selected(&ac_body, "off"),
             "expected the AC OFF button selected, got: {ac_body}"
+        );
+        assert!(
+            !ac_power_selected(&ac_body, "on"),
+            "expected the AC ON button to be neutral, got: {ac_body}"
         );
 
         // While the system is off, the zone controls must stay enabled.
@@ -1042,10 +1046,20 @@ async fn ac_power_toggle_turns_off() {
             .text()
             .await
             .unwrap();
-        // The OFF button is the selected one.
+        // The OFF button is the selected one; ON is neutral.
         assert!(
-            body.contains("class=\"btn selected\"\n              hx-post=\"/ac/0/power\" hx-vals='{\"power\":\"off\"}'"),
+            ac_power_selected(&body, "off"),
             "expected the OFF button to be selected, got: {body}"
+        );
+        assert!(
+            !ac_power_selected(&body, "on"),
+            "expected the ON button to be neutral, got: {body}"
+        );
+        // No Away / Sleep buttons are rendered anymore.
+        assert!(
+            !body.contains("hx-vals='{\"power\":\"away\"}'")
+                && !body.contains("hx-vals='{\"power\":\"sleep\"}'"),
+            "Away/Sleep power buttons should be gone, got: {body}"
         );
         // No power button carries a per-state theme class anymore.
         assert!(
@@ -1333,6 +1347,21 @@ fn program_card<'a>(body: &'a str, program: &str) -> &'a str {
         .split("program-card")
         .next()
         .unwrap_or("")
+}
+
+/// True if the AC power button for `power` ("on" / "off") carries the
+/// `selected` class in the rendered AC card body. The button markup is
+/// `class="btn{% if ... %} selected{% endif %}" ... hx-vals='{"power":"<power>"}'`,
+/// so we split on the button's hx-vals and walk back to its class attribute --
+/// this is robust to the exact indentation/whitespace of the header layout.
+fn ac_power_selected(body: &str, power: &str) -> bool {
+    let needle = format!("hx-vals='{{\"power\":\"{power}\"}}'");
+    let before = body.split(&needle).next().unwrap_or("");
+    before
+        .rsplit("class=\"btn")
+        .next()
+        .unwrap_or("")
+        .contains("selected")
 }
 
 #[tokio::test]

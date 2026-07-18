@@ -615,8 +615,12 @@ impl AcView {
     pub fn fan_int_auto(&self) -> bool {
         self.status.as_ref().map(|s| s.fan_intelligent_auto).unwrap_or(false)
     }
-    pub fn power_eq(&self, s: &str) -> bool {
-        self.power().is_some_and(|p| p == s)
+    /// True when the AC is running -- On, AwayOn, or Sleep. The UI only exposes
+    /// a plain ON/OFF toggle (Away/Sleep are protocol states we don't command),
+    /// but if the console reports the AC in one of those running states we
+    /// still show it as on. Off and AwayOff read as off.
+    pub fn power_on(&self) -> bool {
+        matches!(self.power(), Some("On") | Some("AwayOn") | Some("Sleep"))
     }
     pub fn mode_eq(&self, s: &str) -> bool {
         self.mode().is_some_and(|p| p == s)
@@ -632,9 +636,6 @@ impl AcView {
     }
     pub fn fan_eq(&self, s: &str) -> bool {
         self.fan().is_some_and(|p| p == s)
-    }
-    pub fn power_is_away(&self) -> bool {
-        matches!(self.power(), Some("AwayOff") | Some("AwayOn"))
     }
     pub fn mode_supported(&self, s: &str) -> bool {
         self.supported_modes.contains(&s)

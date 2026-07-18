@@ -328,6 +328,25 @@ h1 {
 .ac-card .name {
   font-size: 16px;
   font-weight: 600;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* AC power lives in the card header as a prominent two-button ON/OFF
+   selector pinned to the right of the unit name. The buttons are wider and
+   bolder than the body controls so the primary on/off action is the easiest
+   target on the card; the inactive side reads muted via the shared
+   .power-group rule below. Away/Sleep are not exposed. */
+.ac-card .head .power-group {
+  flex: none;
+}
+.ac-card .head .power-group .btn {
+  min-width: 64px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 10px 18px;
 }
 .field .label {
   font-size: 10px;

@@ -20,10 +20,10 @@ conditioning.
 - **System status.** A console card shows the console name, network address,
   AirTouch ID, console ID, firmware version, update availability, and the
   number of AC units and zones.
-- **AC control.** Per AC unit: power (On / Off / Away / Sleep), mode
-  (Auto / Heat / Dry / Fan / Cool -- only the modes the unit actually supports
-  are shown), fan speed (with a separate IntelligentAuto toggle), and a
-  setpoint stepper.
+- **AC control.** Per AC unit: a large ON/OFF power toggle in the card
+  header, mode (Auto / Heat / Dry / Fan / Cool -- only the modes the unit
+  actually supports are shown), fan speed (with a separate IntelligentAuto
+  toggle), and a setpoint stepper.
 - **Zone control.** Per zone: power toggle (Off / On / Turbo), a control-mode
   switch between **% airflow** and **temperature setpoint** (temperature only
   for zones with a sensor), and a `+` / `-` stepper that steps the current
@@ -107,9 +107,10 @@ The page is laid out top to bottom:
   line. The status turns red and reads "Disconnected -- reconnecting..." if
   the console is lost; the server keeps the last-known state visible
   underneath while it reconnects.
-- **AC unit cards.** One per AC. Each shows the unit name and controls for
-  power, mode, fan speed, and setpoint, plus the current ("now") temperature
-  and the setpoint value. Unsupported modes and fan speeds are hidden.
+- **AC unit cards.** One per AC. The card header carries the unit name and
+  a large ON/OFF power toggle; the body has controls for mode, fan speed, and
+  setpoint, plus the current ("now") temperature and the setpoint value.
+  Unsupported modes and fan speeds are hidden.
 - **Zones.** An "All zones" bulk bar sits on top of the zone list, followed by
   one row per zone. Each row shows the zone name, its sensor reading (or "no
   sensor" / "sensor n/a"), a circular power toggle, a `%` / `Temp` mode switch,
@@ -136,7 +137,7 @@ These come from the AirTouch 5 protocol and are enforced by the server:
   skips sensor-less zones.
 - An **AC will not start while every one of its zones is off** -- starting it
   would run the unit with no open airflow path. Turn a zone on first. (Turning
-  an already-on AC off, or using Away/Sleep, is always allowed.)
+  an already-on AC off is always allowed.)
 
 Out-of-range or invalid values come back as a short error line in place of the
 control (HTTP 422), so you see the rejection inline.
