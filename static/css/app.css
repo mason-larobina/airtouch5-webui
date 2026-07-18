@@ -134,7 +134,12 @@ h1 {
   color: var(--muted);
   text-transform: uppercase;
 }
+/* Connected uses the same tinted green badge treatment as the other "on"
+   states (.program-toggle.on, .program-status.ok): a --good-dim fill with a
+   --good border and text. Disconnected stays a loud solid-red slab -- it is
+   an alarm and should shout. */
 #connection-state {
+  border: 1px solid var(--good);
   border-radius: var(--radius);
   padding: 8px 14px;
   margin-bottom: 12px;
@@ -142,18 +147,22 @@ h1 {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--good);
-  color: #07140d;
+  background: var(--good-dim);
+  color: var(--good);
   font-weight: 600;
 }
 #connection-state.disconnected {
   background: var(--bad);
+  border-color: var(--bad);
   color: #1a0707;
 }
 #connection-state .dot {
   width: 9px;
   height: 9px;
   border-radius: 50%;
+  background: var(--good);
+}
+#connection-state.disconnected .dot {
   background: rgba(0, 0, 0, 0.35);
 }
 #system {
@@ -312,27 +321,30 @@ h1 {
   opacity: 0.4;
   cursor: not-allowed;
 }
+/* Current temperature and target setpoint sit in two labeled columns:
+   "Now" on the left, "Setpoint" right-aligned over the stepper. Both use
+   the shared micro-heading style (.field .label). */
 .setpoint-row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
-.setpoint-row .current {
+.setpoint-row .current,
+.setpoint-row .target {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
+  flex-direction: column;
 }
-.setpoint-row .current .k {
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
+.setpoint-row .target {
+  align-items: flex-end;
 }
 .setpoint-row .current .v {
   font-family: var(--mono);
   font-size: 26px;
   font-weight: 600;
+  /* Vertically center the reading against the 44px stepper buttons. */
+  min-height: var(--btn-h);
+  display: flex;
+  align-items: center;
 }
 .stepper {
   display: flex;

@@ -69,24 +69,26 @@
     </div>
   </div>
 
-  <!-- Setpoint -->
+  <!-- Current temperature and target setpoint -->
   <div class="field">
-    <div class="label">Setpoint</div>
     <div class="setpoint-row">
       <div class="current">
-        <span class="k">now</span>
+        <div class="label">Now</div>
         <span class="v">{{ ac.temp_display() }}</span>
       </div>
-      <div class="stepper">
-        <button type="button" class="btn step" aria-label="decrement setpoint"
-                hx-post="/ac/{{ ac.id }}/setpoint" hx-vals='{"temp":"{{ ac.setpoint_down() }}"}'
-                hx-target="#ac-{{ ac.id }}"
-                {% if ac.setpoint_down().is_empty() %}disabled{% endif %}>-</button>
-        <span class="val">{{ ac.setpoint_display() }}</span>
-        <button type="button" class="btn step" aria-label="increment setpoint"
-                hx-post="/ac/{{ ac.id }}/setpoint" hx-vals='{"temp":"{{ ac.setpoint_up() }}"}'
-                hx-target="#ac-{{ ac.id }}"
-                {% if ac.setpoint_up().is_empty() %}disabled{% endif %}>+</button>
+      <div class="target">
+        <div class="label">Setpoint</div>
+        <div class="stepper">
+          <button type="button" class="btn step" aria-label="decrement setpoint"
+                  hx-post="/ac/{{ ac.id }}/setpoint" hx-vals='{"temp":"{{ ac.setpoint_down() }}"}'
+                  hx-target="#ac-{{ ac.id }}"
+                  {% if ac.setpoint_down().is_empty() %}disabled{% endif %}>-</button>
+          <span class="val">{{ ac.setpoint_display() }}</span>
+          <button type="button" class="btn step" aria-label="increment setpoint"
+                  hx-post="/ac/{{ ac.id }}/setpoint" hx-vals='{"temp":"{{ ac.setpoint_up() }}"}'
+                  hx-target="#ac-{{ ac.id }}"
+                  {% if ac.setpoint_up().is_empty() %}disabled{% endif %}>+</button>
+        </div>
       </div>
     </div>
   </div>
