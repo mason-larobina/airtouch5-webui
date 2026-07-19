@@ -73,12 +73,21 @@
           <button type="button" class="btn step" aria-label="decrement setpoint"
                   hx-post="/ac/{{ ac.id }}/setpoint" hx-vals='{"temp":"{{ ac.setpoint_down() }}"}'
                   hx-target="#ac-{{ ac.id }}"
-                  {% if ac.setpoint_down().is_empty() %}disabled{% endif %}>-</button>
+                  {% if ac.setpoint_down().is_empty() %}disabled{% endif %}>
+            <svg class="step-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+            </svg>
+          </button>
           <span class="val">{{ ac.setpoint_display() }}</span>
           <button type="button" class="btn step" aria-label="increment setpoint"
                   hx-post="/ac/{{ ac.id }}/setpoint" hx-vals='{"temp":"{{ ac.setpoint_up() }}"}'
                   hx-target="#ac-{{ ac.id }}"
-                  {% if ac.setpoint_up().is_empty() %}disabled{% endif %}>+</button>
+                  {% if ac.setpoint_up().is_empty() %}disabled{% endif %}>
+            <svg class="step-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+              <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>

@@ -35,7 +35,11 @@
     <button class="btn step" type="button" aria-label="decrement"
             hx-post="/zone/{{ zone.id }}/step"
             hx-vals='{"dir":"down"}'
-            hx-target="#zone-{{ zone.id }}">-</button>
+            hx-target="#zone-{{ zone.id }}">
+      <svg class="step-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+      </svg>
+    </button>
     <button class="val" type="button"
             title="tap to switch % / C control"
             {% if !zone.has_sensor %} disabled{% endif %}
@@ -46,6 +50,11 @@
     <button class="btn step" type="button" aria-label="increment"
             hx-post="/zone/{{ zone.id }}/step"
             hx-vals='{"dir":"up"}'
-            hx-target="#zone-{{ zone.id }}">+</button>
+            hx-target="#zone-{{ zone.id }}">
+      <svg class="step-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+        <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+      </svg>
+    </button>
   </div>
 </div>

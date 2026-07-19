@@ -577,6 +577,10 @@ h1 {
 .ac-card .btn.step {
   width: var(--btn-step-w);
   padding: 10px 0;
+  /* These buttons hold only a .step-icon (no text), so their font-size only
+     sizes the em-based icon. Match the zone stepper's 16px so the +/-
+     icons render at the same size in both places. */
+  font-size: 16px;
 }
 .ac-card .setpoint-row .current .v,
 .ac-card .stepper .val {
@@ -676,7 +680,7 @@ h1 {
 .zone-name .name-line {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   min-width: 0;
   flex-wrap: nowrap;
 }
@@ -728,6 +732,9 @@ h1 {
   font-size: 16px;
   color: var(--muted);
   text-align: right;
+  /* Breathing room between the reading and the stepper column to its
+     right (the grid gap already gives 8px; this adds a little more). */
+  padding-right: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -775,6 +782,16 @@ h1 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+/* The +/- stepper glyphs are inline SVGs (stroke = currentColor) so they
+   inherit the button's text colour and track every theme, the disabled
+   opacity, and the selected fill -- an <img> icon could not. They sit on
+   the baseline text size; only the geometry is fixed. */
+.step-icon {
+  width: 1.1em;
+  height: 1.1em;
+  display: block;
+  flex: none;
 }
 .zone-controls .val {
   appearance: none;

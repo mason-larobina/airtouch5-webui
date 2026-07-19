@@ -12,16 +12,16 @@
       <div class="preset-row preset-airflow">
         <button class="btn preset" type="button"
                 hx-post="/zones/preset" hx-vals='{"mode":"airflow","value":"25"}'
-                hx-target="#zones">25%</button>
+                hx-target="#zones">25</button>
         <button class="btn preset" type="button"
                 hx-post="/zones/preset" hx-vals='{"mode":"airflow","value":"50"}'
-                hx-target="#zones">50%</button>
+                hx-target="#zones">50</button>
         <button class="btn preset" type="button"
                 hx-post="/zones/preset" hx-vals='{"mode":"airflow","value":"75"}'
-                hx-target="#zones">75%</button>
+                hx-target="#zones">75</button>
         <button class="btn preset" type="button"
                 hx-post="/zones/preset" hx-vals='{"mode":"airflow","value":"100"}'
-                hx-target="#zones">100%</button>
+                hx-target="#zones">100</button>
       </div>
       {% if snapshot.bulk_temp_available() %}
       <div class="preset-row preset-temperature">
