@@ -794,6 +794,13 @@ h1 {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Round on/off toggle. The inactive (off) toggle is filled and bevelled
+   like every other .btn (--panel-3 fill, --border, --btn-pop) so it pops
+   off the row instead of reading as a bare ring; the on/turbo states fill
+   with their accent colour and use a lighter-toned border (the accent mixed
+   with white) plus the same --btn-pop bevel, replacing the old blurred
+   halo that did not fit the bevel language of the rest of the daylight
+   theme. */
 .zone-toggle {
   appearance: none;
   width: 40px;
@@ -802,31 +809,28 @@ h1 {
   border-radius: 50%;
   flex: none;
   cursor: pointer;
-  border: calc(var(--border-w) + 1px) solid var(--muted);
-  background: transparent;
+  border: var(--border-w) solid var(--border);
+  background: var(--panel-3);
   padding: 0;
   box-shadow: var(--btn-pop, none);
 }
 .zone-toggle:hover {
-  box-shadow: 0 0 0 3px var(--accent-dim);
+  border-color: var(--accent);
+  box-shadow: var(--btn-pop, none), 0 0 0 3px var(--accent-dim);
 }
 .zone-toggle.on {
   background: var(--good);
-  border-color: var(--good);
-  /* The on-glow halo derives from --good via color-mix so it tracks each
-     theme's on-colour (blue for midnight, orange for ember, phosphor green
-     for terminal) instead of a hardcoded green that was off-palette for
-     every theme but midnight. The blur radius is kept tight. */
-  box-shadow: 0 0 5px color-mix(in srgb, var(--good) 60%, transparent);
+  border-color: color-mix(in srgb, var(--good) 45%, #ffffff);
+  box-shadow: var(--btn-pop, none);
 }
 .zone-toggle.off {
-  background: transparent;
-  border-color: var(--muted);
+  background: var(--panel-3);
+  border-color: var(--border);
 }
 .zone-toggle.turbo {
   background: var(--turbo);
-  border-color: var(--turbo);
-  box-shadow: 0 0 5px color-mix(in srgb, var(--turbo) 60%, transparent);
+  border-color: color-mix(in srgb, var(--turbo) 45%, #ffffff);
+  box-shadow: var(--btn-pop, none);
 }
 .zone-temp {
   font-family: var(--mono);
