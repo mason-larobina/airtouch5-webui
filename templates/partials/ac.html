@@ -2,14 +2,12 @@
   <div class="head">
     <div class="name">{{ ac.name }}</div>
     {% if ac.has_status() %}
-    <div class="power-group">
-      <button type="button" class="btn{% if ac.power_on() %} selected{% endif %}"
-              hx-post="/ac/{{ ac.id }}/power" hx-vals='{"power":"on"}'
-              hx-target="#ac-{{ ac.id }}">ON</button>
-      <button type="button" class="btn{% if !ac.power_on() %} selected{% endif %}"
-              hx-post="/ac/{{ ac.id }}/power" hx-vals='{"power":"off"}'
-              hx-target="#ac-{{ ac.id }}">OFF</button>
-    </div>
+    <button type="button" class="ac-power{% if ac.power_on() %} on{% endif %}"
+            aria-pressed="{% if ac.power_on() %}true{% else %}false{% endif %}"
+            aria-label="toggle AC power"
+            title="{% if ac.power_on() %}Running -- tap to stop{% else %}Stopped -- tap to start{% endif %}"
+            hx-post="/ac/{{ ac.id }}/power" hx-vals='{"power":"toggle"}'
+            hx-target="#ac-{{ ac.id }}">{% if ac.power_on() %}Running{% else %}Stopped{% endif %}</button>
     {% endif %}
   </div>
 
