@@ -1,5 +1,6 @@
 <div id="zone-{{ zone.id }}"
      class="zone-row{% if !zone.is_on() %} off{% endif %}"
+     data-ac-mode="{{ zone.ac_mode_slug }}"
      sse-swap="zone-{{ zone.id }}" hx-swap="outerHTML">
 
   <div class="zone-name">

@@ -144,6 +144,12 @@ pub struct ZoneView {
     pub id: u8,
     pub name: String,
     pub ac_id: Option<u8>,
+    /// Lowercase CSS slug ("heat"/"cool"/"fan"/"dry"/"auto", or "") for the
+    /// current operating mode of the AC serving this zone, used to tint the
+    /// zone's power toggle to match its AC. Computed at build time from the
+    /// already-built `acs` map (the zone partial is rendered standalone with
+    /// only the zone, so it cannot reach back to the snapshot).
+    pub ac_mode_slug: &'static str,
     pub power: ZonePowerView,
     pub has_sensor: bool,
     pub control_mode: ControlModeView,
@@ -220,6 +226,23 @@ fn ac_power_str(p: st::AcPower) -> &'static str {
 }
 
 /// Convert a status `AcMode` to a static label.
+/// Lowercase CSS slug for an AC operating mode ("heat"/"cool"/"fan"/
+/// "dry"/"auto"), or "" when there is no status or the mode is unset. The
+/// three Auto variants (Auto / AutoHeat / AutoCool) all collapse to "auto"
+/// -- the controllable mode is just Auto, the heat/cool split is the
+/// console's own decision. Used to colour the AC card, its mode / fan-speed
+/// buttons, and its zones' power toggles by the active mode.
+fn ac_mode_slug(ac: Option<&AcView>) -> &'static str {
+    match ac.and_then(|a| a.mode()) {
+        Some("Heat") => "heat",
+        Some("Cool") => "cool",
+        Some("Fan") => "fan",
+        Some("Dry") => "dry",
+        Some("Auto") | Some("AutoHeat") | Some("AutoCool") => "auto",
+        _ => "",
+    }
+}
+
 fn ac_mode_str(m: st::AcMode) -> &'static str {
     match m {
         st::AcMode::Auto => "Auto",
@@ -365,7 +388,7 @@ pub fn build_snapshot(connected: bool, info: &StaticInfo, status: &st::CurrentSt
             .unwrap_or_else(|| format!("Zone {}", zid));
         let ac_id = info.ac_for_zone(zid);
         let live = status.zones().get(zid);
-        zones.insert(zid, build_zone_view(zid, name, ac_id, live));
+        zones.insert(zid, build_zone_view(zid, name, ac_id, live, &acs));
     }
 
     Snapshot {
@@ -420,13 +443,21 @@ fn build_ac_status_view(a: &st::AcStatus) -> AcStatusView {
     }
 }
 
-fn build_zone_view(id: u8, name: String, ac_id: Option<u8>, live: Option<&st::ZoneStatus>) -> ZoneView {
+fn build_zone_view(
+    id: u8,
+    name: String,
+    ac_id: Option<u8>,
+    live: Option<&st::ZoneStatus>,
+    acs: &BTreeMap<u8, AcView>,
+) -> ZoneView {
+    let ac_mode_slug = ac_mode_slug(ac_id.and_then(|id| acs.get(&id)));
     let Some(z) = live else {
         // No live status yet: render an idle, sensor-less, off zone.
         return ZoneView {
             id,
             name,
             ac_id,
+            ac_mode_slug,
             power: ZonePowerView::Off,
             has_sensor: false,
             control_mode: ControlModeView::Unknown,
@@ -462,6 +493,7 @@ fn build_zone_view(id: u8, name: String, ac_id: Option<u8>, live: Option<&st::Zo
         id,
         name,
         ac_id,
+        ac_mode_slug,
         power,
         has_sensor,
         control_mode,
@@ -633,6 +665,13 @@ impl AcView {
     /// effect.
     pub fn mode_is_auto(&self) -> bool {
         matches!(self.mode(), Some("Auto") | Some("AutoHeat") | Some("AutoCool"))
+    }
+    /// Lowercase CSS slug for the current operating mode ("heat"/"cool"/
+    /// "fan"/"dry"/"auto"), or "" when there is no status / the mode is
+    /// unset. Stamped on the .ac-card as data-ac-mode so the card's selected
+    /// mode / fan-speed buttons can be coloured by the active mode.
+    pub fn mode_slug(&self) -> &'static str {
+        ac_mode_slug(Some(self))
     }
     pub fn fan_eq(&self, s: &str) -> bool {
         self.fan().is_some_and(|p| p == s)

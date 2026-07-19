@@ -18,6 +18,21 @@
   --warn: #b07812;
   --bad: #cf4040;
   --turbo: #8b53d9;
+  /* Pastel tint fill for the violet "turbo" / Auto-mode accent, mirroring
+     --good-dim / --warn-dim. */
+  --turbo-dim: rgba(139, 83, 217, 0.16);
+  /* Per-AC-mode colour aliases. Each mode maps to an existing semantic
+     token so the whole palette adapts per theme automatically: Heat reuses
+     the warm --run (orange), Cool the --accent (blue), Fan the --good
+     (green), Dry the --warn (amber), Auto the --turbo (violet). The -dim
+     pair is the matching pastel fill. Selected mode / fan-speed buttons and
+     on-zone toggles read these via the --acm / --acm-dim vars set by the
+     data-ac-mode rules below. */
+  --m-heat: var(--run); --m-heat-dim: var(--run-dim);
+  --m-cool: var(--accent); --m-cool-dim: var(--accent-dim);
+  --m-fan: var(--good); --m-fan-dim: var(--good-dim);
+  --m-dry: var(--warn); --m-dry-dim: var(--warn-dim);
+  --m-auto: var(--turbo); --m-auto-dim: var(--turbo-dim);
   /* "Running" highlight for the AC power toggle: a warm orange (border, text,
      status dot) over a pastel-orange tint fill, so a running unit reads as
      obviously active. Overridden per dark theme below; the contrast theme
@@ -87,6 +102,7 @@
   --warn: #f0a93b;
   --bad: #e25b5b;
   --turbo: #b07df0;
+  --turbo-dim: rgba(176, 125, 240, 0.16);
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 /* Terminal: a phosphor-green-on-black CRT look. Distinct from the other
@@ -111,6 +127,7 @@
   --warn-dim: rgba(255, 204, 85, 0.14);
   --bad: #ff5c5c;
   --turbo: #5cc8ff;
+  --turbo-dim: rgba(92, 200, 255, 0.16);
   --shadow: none;
 }
 /* Structural overrides that make the theme a terminal: monospace everywhere
@@ -142,6 +159,7 @@
   --warn: #f0a93b;
   --bad: #e25b5b;
   --turbo: #c490f0;
+  --turbo-dim: rgba(196, 144, 240, 0.16);
 }
 /* Contrast: strict black-on-white grayscale -- every color is white, gray,
    or black. Selected and "on" controls are inverted (a solid black fill
@@ -165,6 +183,7 @@
   --warn: #595959;
   --bad: #000000;
   --turbo: #595959;
+  --turbo-dim: rgba(0, 0, 0, 0.08);
   /* Running highlight flattens to the grayscale scale: a solid black fill
      (like every other on-state here) with white text via the .ac-power.on
      contrast override below. */
@@ -634,6 +653,37 @@ h1 {
   border-right-color: var(--border);
   box-shadow: inset 0 0 0 1px var(--accent);
 }
+/* Mode-coloured selected controls: the active AC mode button, the active
+   fan-speed button (+ Int Auto), and an on-zone toggle all take the colour
+   of the AC's current operating mode. The mode slug is stamped as
+   data-ac-mode on the .ac-card and .zone-row; these rules map it to the
+   --acm / --acm-dim pair (the per-mode --m-* aliases, which reuse the
+   theme's run / accent / good / warn / turbo tokens). When the AC has no
+   mode (off / unset) --acm is unset and the controls fall back to the
+   default accent (buttons) or green (zone toggle) selected look. Text stays
+   --sel-text so the contrast theme's solid-black selected fill keeps its
+   white text. */
+[data-ac-mode="heat"] { --acm: var(--m-heat); --acm-dim: var(--m-heat-dim); }
+[data-ac-mode="cool"] { --acm: var(--m-cool); --acm-dim: var(--m-cool-dim); }
+[data-ac-mode="fan"]  { --acm: var(--m-fan);  --acm-dim: var(--m-fan-dim); }
+[data-ac-mode="dry"]  { --acm: var(--m-dry);  --acm-dim: var(--m-dry-dim); }
+[data-ac-mode="auto"] { --acm: var(--m-auto); --acm-dim: var(--m-auto-dim); }
+/* Active AC mode button (the mode row is the .segmented that is a direct
+   child of a .field; the fan row sits inside .fan-row) and active fan-speed
+   button both recolour to the AC's current mode. */
+.ac-card .field > .segmented button.active,
+.ac-card .fan-row .segmented button.active {
+  background: var(--acm-dim, var(--accent-dim));
+  box-shadow: inset 0 0 0 1px var(--acm, var(--accent));
+  color: var(--sel-text);
+}
+/* Int Auto is a standalone bordered button (not a borderless cell), so its
+   mode colour goes on the real border, not an inset ring. */
+.ac-card .fan-row .int-auto.active {
+  background: var(--acm-dim, var(--accent-dim));
+  border-color: var(--acm, var(--accent));
+  color: var(--sel-text);
+}
 .btn.selected:hover {
   border-color: var(--accent);
 }
@@ -818,9 +868,15 @@ h1 {
   border-color: var(--accent);
   box-shadow: var(--btn-pop, none), 0 0 0 3px var(--accent-dim);
 }
+/* An on-zone toggle takes the colour of its AC's current operating mode
+   (--acm, set on the .zone-row from data-ac-mode), with the same lighter-
+   toned border + --btn-pop bevel as the other toggles. When the AC has no
+   mode (off / unset) --acm is unset and the toggle falls back to green
+   (--good), the original on colour. Turbo keeps its own violet regardless
+   of mode so it stays a distinct state. */
 .zone-toggle.on {
-  background: var(--good);
-  border-color: color-mix(in srgb, var(--good) 45%, #ffffff);
+  background: var(--acm, var(--good));
+  border-color: color-mix(in srgb, var(--acm, var(--good)) 45%, #ffffff);
   box-shadow: var(--btn-pop, none);
 }
 .zone-toggle.off {
