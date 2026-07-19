@@ -60,18 +60,17 @@
    plus a tight drop shadow, so standalone buttons and the large panel cards
    lift off the page without a heavy solid shadow. --btn-pop sizes the bevel
    for controls; --card-pop softens the bottom edge (0.10 vs 0.14) and reuses
-   the standard --shadow offset for the cards. Both live under
-   [data-theme="daylight"] so only the default light theme gets them; the
-   dark themes leave them unset, so the rules below fall back to none
-   (buttons / segmented / toggle) or --shadow (cards) and keep their
-   existing flat borders. */
+   the standard --shadow offset for the cards. The ember theme defines its own
+   warm counterpart of these tokens; contrast leaves them unset, so the rules
+   below fall back to none (buttons / segmented / toggle) or --shadow (cards)
+   and keep their existing flat borders. */
 :root[data-theme="daylight"] {
   --btn-pop:
-    inset 0 1px 0 rgba(255, 255, 255, 0.75),
-    inset 0 -1px 0 rgba(28, 36, 51, 0.14), 0 1px 2px rgba(25, 35, 55, 0.22);
+    inset 0 2px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -2px 0 rgba(28, 36, 51, 0.14), 0 1px 2px rgba(25, 35, 55, 0.22);
   --card-pop:
-    inset 0 1px 0 rgba(255, 255, 255, 0.75),
-    inset 0 -1px 0 rgba(28, 36, 51, 0.10), 0 1px 3px rgba(25, 35, 55, 0.18);
+    inset 0 2px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -2px 0 rgba(28, 36, 51, 0.10), 0 1px 3px rgba(25, 35, 55, 0.18);
 }
 /* Color themes. The plain :root block above is the default theme (daylight);
    every other theme is a custom-property override selected by the data-theme
@@ -101,6 +100,21 @@
   --bad: #e25b5b;
   --turbo: #c490f0;
   --turbo-dim: rgba(196, 144, 240, 0.16);
+  /* Ember counterpart of the daylight two-tone bevel: a warm-light inner-top
+     edge (the theme's off-white text colour, low alpha so it reads as a soft
+     top highlight against the dark panel rather than a garish line) plus a
+     deep inner-bottom edge and a near-black drop shadow, so buttons and cards
+     lift off the dark warm background the same way they do on daylight.
+     --btn-pop sizes the bevel for controls; --card-pop softens the bottom
+     edge (0.35 vs 0.45) and widens the shadow slightly for the large panels.
+     --shadow is set to a dark-appropriate value for any direct fallback. */
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --btn-pop:
+    inset 0 2px 0 rgba(244, 234, 225, 0.10),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.5);
+  --card-pop:
+    inset 0 2px 0 rgba(244, 234, 225, 0.10),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 /* Contrast: strict black-on-white grayscale -- every color is white, gray,
    or black. Selected and "on" controls are inverted (a solid black fill
