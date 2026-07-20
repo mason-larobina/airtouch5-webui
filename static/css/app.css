@@ -28,11 +28,16 @@
      pair is the matching pastel fill. Selected mode / fan-speed buttons and
      on-zone toggles read these via the --acm / --acm-dim vars set by the
      data-ac-mode rules below. */
-  --m-heat: var(--run); --m-heat-dim: var(--run-dim);
-  --m-cool: var(--accent); --m-cool-dim: var(--accent-dim);
-  --m-fan: var(--good); --m-fan-dim: var(--good-dim);
-  --m-dry: var(--warn); --m-dry-dim: var(--warn-dim);
-  --m-auto: var(--turbo); --m-auto-dim: var(--turbo-dim);
+  --m-heat: var(--run);
+  --m-heat-dim: var(--run-dim);
+  --m-cool: var(--accent);
+  --m-cool-dim: var(--accent-dim);
+  --m-fan: var(--good);
+  --m-fan-dim: var(--good-dim);
+  --m-dry: var(--warn);
+  --m-dry-dim: var(--warn-dim);
+  --m-auto: var(--turbo);
+  --m-auto-dim: var(--turbo-dim);
   /* "Running" highlight for the AC power toggle: a warm orange (border, text,
      status dot) over a pastel-orange tint fill, so a running unit reads as
      obviously active. Overridden per dark theme below; the contrast theme
@@ -70,7 +75,7 @@
     inset 0 -2px 0 rgba(28, 36, 51, 0.14), 0 1px 2px rgba(25, 35, 55, 0.22);
   --card-pop:
     inset 0 2px 0 rgba(255, 255, 255, 0.75),
-    inset 0 -2px 0 rgba(28, 36, 51, 0.10), 0 1px 3px rgba(25, 35, 55, 0.18);
+    inset 0 -2px 0 rgba(28, 36, 51, 0.1), 0 1px 3px rgba(25, 35, 55, 0.18);
 }
 /* Color themes. The plain :root block above is the default theme (daylight);
    every other theme is a custom-property override selected by the data-theme
@@ -110,11 +115,11 @@
      --shadow is set to a dark-appropriate value for any direct fallback. */
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   --btn-pop:
-    inset 0 2px 0 rgba(244, 234, 225, 0.10),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.5);
+    inset 0 2px 0 rgba(244, 234, 225, 0.1), inset 0 -2px 0 rgba(0, 0, 0, 0.45),
+    0 1px 2px rgba(0, 0, 0, 0.5);
   --card-pop:
-    inset 0 2px 0 rgba(244, 234, 225, 0.10),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.45);
+    inset 0 2px 0 rgba(244, 234, 225, 0.1), inset 0 -2px 0 rgba(0, 0, 0, 0.35),
+    0 1px 3px rgba(0, 0, 0, 0.45);
 }
 /* Contrast: strict black-on-white grayscale -- every color is white, gray,
    or black. Selected and "on" controls are inverted (a solid black fill
@@ -385,8 +390,13 @@ h1 {
    enough to read as a live heartbeat rather than a flash. Stopped / off
    pills do not get it -- a still dot reads as idle. */
 @keyframes breathe {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
 }
 /* Leading status dot tracks the label via currentColor: muted when stopped,
    orange when running. The running dot breathes (see @keyframes breathe). */
@@ -643,11 +653,26 @@ h1 {
    default accent (buttons) or green (zone toggle) selected look. Text stays
    --sel-text so the contrast theme's solid-black selected fill keeps its
    white text. */
-[data-ac-mode="heat"] { --acm: var(--m-heat); --acm-dim: var(--m-heat-dim); }
-[data-ac-mode="cool"] { --acm: var(--m-cool); --acm-dim: var(--m-cool-dim); }
-[data-ac-mode="fan"]  { --acm: var(--m-fan);  --acm-dim: var(--m-fan-dim); }
-[data-ac-mode="dry"]  { --acm: var(--m-dry);  --acm-dim: var(--m-dry-dim); }
-[data-ac-mode="auto"] { --acm: var(--m-auto); --acm-dim: var(--m-auto-dim); }
+[data-ac-mode="heat"] {
+  --acm: var(--m-heat);
+  --acm-dim: var(--m-heat-dim);
+}
+[data-ac-mode="cool"] {
+  --acm: var(--m-cool);
+  --acm-dim: var(--m-cool-dim);
+}
+[data-ac-mode="fan"] {
+  --acm: var(--m-fan);
+  --acm-dim: var(--m-fan-dim);
+}
+[data-ac-mode="dry"] {
+  --acm: var(--m-dry);
+  --acm-dim: var(--m-dry-dim);
+}
+[data-ac-mode="auto"] {
+  --acm: var(--m-auto);
+  --acm-dim: var(--m-auto-dim);
+}
 /* Active AC mode button (the mode row is the .segmented that is a direct
    child of a .field; the fan row sits inside .fan-row) and active fan-speed
    button both recolour to the AC's current mode. */
@@ -846,7 +871,9 @@ h1 {
 }
 .zone-toggle:hover {
   border-color: var(--accent);
-  box-shadow: var(--btn-pop, none), 0 0 0 3px var(--accent-dim);
+  box-shadow:
+    var(--btn-pop, none),
+    0 0 0 3px var(--accent-dim);
 }
 /* An on-zone toggle takes the colour of its AC's current operating mode
    (--acm, set on the .zone-row from data-ac-mode), with the same lighter-

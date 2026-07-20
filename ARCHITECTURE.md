@@ -6,7 +6,7 @@ This document is for contributors. For user-facing usage see **README.md**.
 AirTouch 5 console, `airtouch5-webui-mock` for an in-memory controller) that serve a
 server-rendered web UI over [htmx](https://htmx.org) with live updates pushed
 over Server-Sent Events (SSE). It wraps the
-[`airtouch5`](https://codeberg.org/kbriggs/airtouch5) crate.
+[`airtouch5`](https://github.com/mason-larobina/airtouch5) crate.
 
 The central design choice: **one long-lived task owns the non-`Clone`
 `AirTouch5` handle, and the web layer talks to it through cheap cloneable
@@ -16,15 +16,18 @@ handles.** Everything the browser renders comes from a single render-ready
 ## 1. Stack
 
 ```toml
-airtouch5 = { version = "0.2", features = ["control"] }   # control enables control_zone/control_ac
+airtouch5 = { git = "https://github.com/mason-larobina/airtouch5", features = ["control"] }
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread","macros","signal","time","sync"] }
-tower = "0.5"
-tower-http = { version = "0.6", features = ["trace"] }   # request tracing
+tower-http = { version = "0.7", features = ["trace"] }   # request tracing
 askama = "0.16"            # compile-time Jinja-like templates (render() -> String, wrapped in Html)
 tracing, tracing-subscriber (env-filter)
 futures-util = "0.3"       # SSE stream combinators
 clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }        # automation config serialization
+serde_json = "1"          # JSON persistence for automation config
+dirs = "6"                # XDG config directory resolution
+chrono = { version = "0.4", default-features = false, features = ["clock"] }  # human-readable target times in automation UI
 ```
 
 Vendored, un-minified, version-pinned static assets under `static/vendor/`:
@@ -77,14 +80,17 @@ The crate (`src/lib.rs`) exposes:
   - `sse.rs` -- `/events`: the SSE stream with per-id dirty diffing.
   - `static_assets.rs` -- vendor JS / CSS / icons embedded into the binary via
     `include_bytes!` and served from `/vendor`, `/css`, `/icons`.
-  - `handlers/` -- `pages.rs` (`GET /`, `GET /partials/*`, `POST /refresh`),
-    `zone.rs` (`POST /zone/*` and bulk `/zones/*`), `ac.rs` (`POST /ac/*`),
-    `automation.rs` (`POST /automation/*`).
+  - `theme.rs` -- color theme registry and cookie helpers; drives the footer
+    theme selector markup and validates the `theme` cookie.
+  - `handlers/` -- `pages.rs` (`GET /`, `GET /partials/*`, `POST /refresh`,
+    `POST /theme`), `zone.rs` (`POST /zone/*` and bulk `/zones/*`),
+    `ac.rs` (`POST /ac/*`), `automation.rs` (`POST /automation/*`).
 - `mock.rs` -- an in-memory controller implementing the same `ManagerHandle`
   contract, used by `airtouch5-webui-mock` and the e2e tests.
 - `templates.rs` -- the askama `Template` structs (one per template file) and
   the `render_*` helpers the handlers and SSE stream call.
-- `config.rs` -- `Config { listen, discovery_timeout, log_level }`.
+- `config.rs` -- `Config { listen, discovery_timeout }`. Logging level is set
+  via the `RUST_LOG` env var, not in the Config struct.
 
 Binaries:
 
@@ -96,8 +102,11 @@ Binaries:
 
 Templates (`templates/`, askama, configured via `askama.toml`):
 
-- `base.html` -- `<head>`, a `<link>` to `/css/app.css`, htmx + sse script tags.
-- `index.html` -- page shell + SSE bootstrap, includes the partials inline.
+- `base.html` -- `<head>`, a `<link>` to `/css/app.css`, htmx + sse script tags,
+  and a client-side theme-switching script (sets `data-theme` on `<html>` and
+  updates `<meta name="theme-color">`).
+- `index.html` -- page shell + SSE bootstrap, includes the partials inline, plus
+  a footer with the theme selector and a repo link.
 - `partials/connection_state.html` -- `#connection-state` (disconnected
   alarm; kept in the DOM but hidden while connected, shown only when the
   link is lost), included at the bottom of `#system`.
@@ -109,7 +118,9 @@ Templates (`templates/`, askama, configured via `askama.toml`):
   includes one `zone.html` per zone.
 - `partials/zone.html` -- `#zone-<id>` (one zone row).
 - `partials/automation.html` -- `#automation` (two program cards: enable
-  toggles + parameter presets).
+  toggles + parameter presets; also listenable via SSE `automation` event).
+- `partials/theme_selector.html` -- `nav.theme-selector` (three theme buttons
+  that set `data-theme` on `<html>` and `hx-post` to `/theme` to persist).
 
 There is no `macros.html`; shared rendering helpers live as methods on the view
 types in `snapshot.rs`.
@@ -336,13 +347,15 @@ Protocol constraints enforced at the edges:
 - `ZoneControl.control` must be `None` for sensor-less zones. The per-zone Temp
   button is disabled for them, and the bulk "All zones" temperature switch
   skips them.
-- The per-zone `/control-type` and `/step` routes compute an absolute value
-  server-side and send `SetAirflow` / `SetTemperature` rather than
-  `SetControlType` / `StepValue`. The console silently ignores a
+- The per-zone `/control-type`, `/control-type/toggle`, and `/step` routes
+  compute an absolute value server-side and send `SetAirflow` / `SetTemperature`
+  rather than `SetControlType` / `StepValue`. The console silently ignores a
   control-type-only message (200 OK but no mode change -> no UI feedback),
   and a relative Increment/Decrement powers an OFF zone on. Absolute values
   carry no power field, so an OFF zone stays off while its value/mode still
-  updates -- the same property the bulk presets rely on.
+  updates -- the same property the bulk presets rely on. The `/control-type/toggle`
+  route is the single-tap target for the zone row's setpoint value button, which
+  doubles as a %/C mode switch.
 
 ## 6. HTTP routes and the htmx/SSE contract
 
@@ -361,6 +374,7 @@ over a single SSE stream.
 | GET    | `/partials/zones/{id}` | `pages::partial_zone`       | `#zone-<id>`                        |
 | GET    | `/partials/automation` | `pages::partial_automation` | `#automation` (both program cards)  |
 | POST   | `/refresh`             | `pages::refresh`            | re-pull status, re-render `#system` |
+| POST   | `/theme`               | `pages::set_theme`          | empty (sets cookie; client applies) |
 
 ### 6.2 SSE
 
@@ -369,23 +383,25 @@ over a single SSE stream.
 | GET    | `/events` | `text/event-stream` |
 
 On connect, the stream emits a **full** initial render (the `state`, `system`,
-every `ac-<id>`, every `zone-<id>` fragment) so a fresh browser populates
-everything, then **per-change diffs** thereafter. Each event's `data:` is the
+every `ac-<id>`, every `zone-<id>`, and `automation` fragments) so a fresh
+browser populates everything, then **per-change diffs** thereafter. Each event's `data:` is the
 matching HTML fragment with a stable element `id`:
 
-| event       | `data:`                          | browser target           |
-| ----------- | -------------------------------- | ------------------------ |
-| `state`     | `<div id="connection-state">...` | swap `#connection-state` |
-| `system`    | `<div id="system">...`           | swap `#system`           |
-| `ac-<id>`   | `<div id="ac-<id>" ...>...`      | swap `#ac-<id>`          |
-| `zone-<id>` | `<div id="zone-<id>" ...>...`    | swap `#zone-<id>`        |
+| event        | `data:`                          | browser target           |
+| ------------ | -------------------------------- | ------------------------ |
+| `state`      | `<div id="connection-state">...` | swap `#connection-state` |
+| `system`     | `<div id="system">...`           | swap `#system`           |
+| `ac-<id>`    | `<div id="ac-<id>" ...>...`      | swap `#ac-<id>`          |
+| `zone-<id>`  | `<div id="zone-<id>" ...>...`    | swap `#zone-<id>`        |
+| `automation` | `<div id="automation" ...>...`   | swap `#automation`       |
 
 **Per-id event names are deliberate.** The htmx-sse extension swaps an event's
 data into _every_ element listening for that event name, so a generic `zone`
 event would swap the same fragment into every card. Per-id names (`zone-3`,
-`zone-7`) isolate each card to its own event. Each fragment element carries
-its own `sse-swap="zone-<id>"` (or `ac-<id>`, `system`, `state`) plus
-`hx-swap="outerHTML"`.
+`zone-7`) isolate each card to its own event. The `automation` event is a single
+named event (not per-id) that re-renders the whole program card set. Each
+fragment element carries its own `sse-swap="zone-<id>"` (or `ac-<id>`, `system`,
+`state`, `automation`) plus `hx-swap="outerHTML"`.
 
 **Per-id dirty diffing.** The SSE handler keeps the previous `Snapshot` (clone).
 On each `watch::changed()` it compares `prev.console` / `prev.connected` and
@@ -406,13 +422,14 @@ Client wiring (in `index.html`):
 
 ### 6.3 Zone control endpoints
 
-| Method | Path                      | Form field(s)                  | Action                                                                                                                                                      |
-| ------ | ------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| POST   | `/zone/{id}/power`        | `power=on\|off\|turbo\|toggle` | `ZonePower`                                                                                                                                                 |
-| POST   | `/zone/{id}/control-type` | `type=airflow\|temperature`    | `SetAirflow(pct)` / `SetTemperature(t)` (temp rejected if `!has_sensor`; absolute value so an off zone is not powered on)                                   |
-| POST   | `/zone/{id}/step`         | `dir=up\|down`                 | `SetAirflow(pct +/-5%)` / `SetTemperature(t +/-1.0 C)` (server-computed absolute value; the relative Increment/Decrement opcode would power an off zone on) |
-| POST   | `/zone/{id}/airflow`      | `pct=0..100`                   | `SetAirflow(pct)`                                                                                                                                           |
-| POST   | `/zone/{id}/setpoint`     | `temp=10.0..25.0`              | `SetTemperature(t)` (also forces Temperature mode)                                                                                                          |
+| Method | Path                             | Form field(s)                  | Action                                                                                                                                                      |
+| ------ | -------------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/zone/{id}/power`               | `power=on\|off\|turbo\|toggle` | `ZonePower`                                                                                                                                                 |
+| POST   | `/zone/{id}/control-type`        | `type=airflow\|temperature`    | `SetAirflow(pct)` / `SetTemperature(t)` (temp rejected if `!has_sensor`; absolute value so an off zone is not powered on)                                   |
+| POST   | `/zone/{id}/control-type/toggle` | (none)                         | Switches to the opposite mode (airflow <-> temperature); delegates to `/control-type` logic.                                                                |
+| POST   | `/zone/{id}/step`                | `dir=up\|down`                 | `SetAirflow(pct +/-5%)` / `SetTemperature(t +/-1.0 C)` (server-computed absolute value; the relative Increment/Decrement opcode would power an off zone on) |
+| POST   | `/zone/{id}/airflow`             | `pct=0..100`                   | `SetAirflow(pct)`                                                                                                                                           |
+| POST   | `/zone/{id}/setpoint`            | `temp=10.0..25.0`              | `SetTemperature(t)` (also forces Temperature mode)                                                                                                          |
 
 Bulk endpoints apply to every zone and re-render the whole `#zones` partial:
 
