@@ -124,6 +124,7 @@ pub fn sample_snapshot() -> Snapshot {
             name: "Living Room".into(),
             ac_id: Some(0),
             ac_mode_slug: "cool",
+            ac_power_on: true,
             power: ZonePowerView::On,
             has_sensor: true,
             control_mode: ControlModeView::Temperature,
@@ -137,6 +138,7 @@ pub fn sample_snapshot() -> Snapshot {
             name: "Bedroom".into(),
             ac_id: Some(0),
             ac_mode_slug: "cool",
+            ac_power_on: true,
             power: ZonePowerView::Off,
             has_sensor: false,
             control_mode: ControlModeView::Airflow,
@@ -150,6 +152,7 @@ pub fn sample_snapshot() -> Snapshot {
             name: "Kitchen".into(),
             ac_id: Some(0),
             ac_mode_slug: "cool",
+            ac_power_on: true,
             power: ZonePowerView::On,
             has_sensor: true,
             control_mode: ControlModeView::Airflow,
@@ -163,6 +166,7 @@ pub fn sample_snapshot() -> Snapshot {
             name: "Study".into(),
             ac_id: Some(0),
             ac_mode_slug: "cool",
+            ac_power_on: true,
             power: ZonePowerView::Turbo,
             has_sensor: true,
             control_mode: ControlModeView::Temperature,
@@ -176,6 +180,7 @@ pub fn sample_snapshot() -> Snapshot {
             name: "Garage".into(),
             ac_id: Some(0),
             ac_mode_slug: "cool",
+            ac_power_on: true,
             power: ZonePowerView::Off,
             has_sensor: false,
             control_mode: ControlModeView::Airflow,
@@ -189,6 +194,7 @@ pub fn sample_snapshot() -> Snapshot {
             name: "Bathroom".into(),
             ac_id: Some(0),
             ac_mode_slug: "cool",
+            ac_power_on: true,
             power: ZonePowerView::On,
             has_sensor: true,
             control_mode: ControlModeView::Airflow,
@@ -381,6 +387,16 @@ fn apply_ac(snap: &mut Snapshot, id: u8, req: AcControlReq) -> Result<(), String
                 AcPowerCmd::On => status.power = Some("On"),
                 AcPowerCmd::Away => status.power = Some("AwayOff"),
                 AcPowerCmd::Sleep => status.power = Some("Sleep"),
+            }
+            // Sync the serving-AC power flag on this AC's zones so the UI can
+            // dim their controls when the AC turns off. The real build path
+            // recomputes this per snapshot; the mock mutates in place, so we
+            // update it here.
+            let on = ac.power_on();
+            for z in snap.zones.values_mut() {
+                if z.ac_id == Some(id) {
+                    z.ac_power_on = on;
+                }
             }
         }
         AcControlReq::Mode(m) => {

@@ -435,6 +435,19 @@ h1 {
 :root[data-theme="contrast"] .ac-power.on {
   color: var(--sel-text);
 }
+/* When the AC is off the .ac-card carries the `off` class. Its control
+   buttons (mode, fan speed, setpoint +/-) and the setpoint value text drop
+   to 0.5 opacity to read as inert, while the power toggle in the header
+   stays at full opacity so it remains the obvious tap target to start the
+   unit again. The "Now" current-temperature reading is left at full
+   opacity: it is a live sensor value that stays meaningful whether or not
+   the AC is running. The buttons stay enabled (the user can pre-stage mode
+   / fan / setpoint before powering on), so disabled controls keep their own
+   lower opacity via :not(:disabled). */
+.ac-card.off .field button:not(:disabled),
+.ac-card.off .stepper .val {
+  opacity: 0.5;
+}
 .field .label {
   font-size: 10px;
   letter-spacing: 0.06em;
@@ -810,6 +823,17 @@ h1 {
    off. */
 .zone-row.off .name {
   color: var(--muted);
+}
+/* When the AC serving this zone is off the .zone-row carries the `ac-off`
+   class. The zone's buttons -- the round power toggle and the whole control
+   cluster (+/- stepper and the % / C value toggle, all <button>s) -- drop to
+   0.5 opacity to echo the AC's inert state. This is separate from the
+   zone's own `.off` state above: a zone can be on while its AC is off (and
+   vice versa), and only the AC-off case dims the controls. The buttons stay
+   enabled so the user can still stage the zone ahead of powering the AC on. */
+.zone-row.ac-off .zone-toggle,
+.zone-row.ac-off .zone-controls {
+  opacity: 0.5;
 }
 /* The control cluster (-, setpoint value, +) is one segmented control --
    a bordered panel-2 box with inter-cell dividers, mirroring the AC mode /

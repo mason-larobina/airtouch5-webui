@@ -150,6 +150,12 @@ pub struct ZoneView {
     /// already-built `acs` map (the zone partial is rendered standalone with
     /// only the zone, so it cannot reach back to the snapshot).
     pub ac_mode_slug: &'static str,
+    /// Whether the AC serving this zone is currently running (its
+    /// [`AcView::power_on`] is true). Stamped on the .zone-row as the `ac-off`
+    /// class (its absence) so the zone's controls can be dimmed to 0.5 opacity
+    /// when their AC is off. Computed at build time from the already-built
+    /// `acs` map, like `ac_mode_slug` (the zone partial renders standalone).
+    pub ac_power_on: bool,
     pub power: ZonePowerView,
     pub has_sensor: bool,
     pub control_mode: ControlModeView,
@@ -450,7 +456,9 @@ fn build_zone_view(
     live: Option<&st::ZoneStatus>,
     acs: &BTreeMap<u8, AcView>,
 ) -> ZoneView {
-    let ac_mode_slug = ac_mode_slug(ac_id.and_then(|id| acs.get(&id)));
+    let ac = ac_id.and_then(|id| acs.get(&id));
+    let ac_mode_slug = ac_mode_slug(ac);
+    let ac_power_on = ac.is_some_and(|a| a.power_on());
     let Some(z) = live else {
         // No live status yet: render an idle, sensor-less, off zone.
         return ZoneView {
@@ -458,6 +466,7 @@ fn build_zone_view(
             name,
             ac_id,
             ac_mode_slug,
+            ac_power_on,
             power: ZonePowerView::Off,
             has_sensor: false,
             control_mode: ControlModeView::Unknown,
@@ -494,6 +503,7 @@ fn build_zone_view(
         name,
         ac_id,
         ac_mode_slug,
+        ac_power_on,
         power,
         has_sensor,
         control_mode,

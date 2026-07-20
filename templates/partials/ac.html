@@ -1,4 +1,4 @@
-<div id="ac-{{ ac.id }}" class="ac-card" data-ac-mode="{{ ac.mode_slug() }}" sse-swap="ac-{{ ac.id }}" hx-swap="outerHTML">
+<div id="ac-{{ ac.id }}" class="ac-card{% if !ac.power_on() %} off{% endif %}" data-ac-mode="{{ ac.mode_slug() }}" sse-swap="ac-{{ ac.id }}" hx-swap="outerHTML">
   <div class="head">
     <div class="name">{{ ac.name }}</div>
     {% if ac.has_status() %}
