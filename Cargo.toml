@@ -19,7 +19,7 @@ dirs = "6"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 
 [dev-dependencies]
-reqwest = { version = "0.13", default-features = false, features = ["rustls", "stream"] }
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "stream", "form"] }
 
 [profile.release]
 # For cargo flamegraph
