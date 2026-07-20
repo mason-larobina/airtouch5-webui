@@ -99,8 +99,17 @@ LockPersonality=yes
 MemoryDenyWriteExecute=yes
 RemoveIPC=yes
 
-# Only the address families the app uses: UDP/TCP for the console and HTTP.
-RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+# Only the address families the app uses:
+#   AF_INET / AF_INET6 -- UDP broadcast discovery, the TCP console connection,
+#                          and the HTTP listener.
+#   AF_UNIX            -- tokio / tracing internals, /tmp bits.
+#   AF_NETLINK         -- required by libc::getifaddrs(), which the airtouch5
+#                          discovery crate calls to enumerate network
+#                          interfaces and derive their broadcast addresses.
+#                          Without this, RestrictAddressFamilies blocks the
+#                          netlink socket with EAFNOSUPPORT and discovery
+#                          cannot find the console on the local network.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
 
 [Install]
 WantedBy=multi-user.target
