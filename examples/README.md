@@ -33,5 +33,6 @@ systemctl status airtouch5-controller-webui
 journalctl -u airtouch5-controller-webui -f
 ```
 
-All CLI flags have matching `AIRTOUCH5_CONTROLLER_WEBUI_*` env vars; override
-them with `Environment=` lines in the unit file (documented in its header).
+All options are CLI flags (no env vars); pass them on the `ExecStart=` line in
+the unit file (documented in its header). Logging is the one env-driven option
+and stays on `RUST_LOG`.

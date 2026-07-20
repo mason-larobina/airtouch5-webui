@@ -24,7 +24,7 @@ tower-http = { version = "0.6", features = ["trace"] }   # request tracing
 askama = "0.16"            # compile-time Jinja-like templates (render() -> String, wrapped in Html)
 tracing, tracing-subscriber (env-filter)
 futures-util = "0.3"       # SSE stream combinators
-clap = { version = "4", features = ["derive","env"] }
+clap = { version = "4", features = ["derive"] }
 ```
 
 Vendored, un-minified, version-pinned static assets under `static/vendor/`:

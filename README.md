@@ -69,18 +69,18 @@ The release binaries land at `target/release/airtouch5-controller-webui` and
 Then open `http://localhost:3000` (or `http://<this-machine>:3000` from another
 device on the same network).
 
-#### Command-line options and environment variables
+#### Command-line options
 
-| Option                        | Env var                       | Default        | Meaning                                                                                                                                                                           |
-| ----------------------------- | ----------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--bind <addr:port>`          | `AIRTOUCH5_CONTROLLER_WEBUI_LISTEN`               | `0.0.0.0:3000` | Address and port the HTTP server listens on.                                                                                                                                      |
-| `--discovery-timeout-ms <ms>` | `AIRTOUCH5_CONTROLLER_WEBUI_DISCOVERY_TIMEOUT_MS` | `3000`         | How long UDP discovery waits for a console response.                                                                                                                              |
-| `--timeout <seconds>`         | (none)                        | off            | Shut down after N seconds (mainly for tests).                                                                                                                                     |
-| `--automation-tick-secs <s>`  | `AIRTOUCH5_CONTROLLER_WEBUI_AUTOMATION_TICK_SECS` | `60`           | How often the automation engine evaluates its programs. `0` disables it.                                                                                                          |
-| `--automation-config <path>`  | `AIRTOUCH5_CONTROLLER_WEBUI_AUTOMATION_CONFIG`    | XDG config dir | File the automation enable/parameter settings are saved to and loaded from. Defaults to `$XDG_CONFIG_HOME/airtouch5-controller-webui/automation.json` (typically `~/.config/airtouch5-controller-webui/automation.json`). |
+| Option                        | Default        | Meaning                                                                                                                                                                           |
+| ----------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--bind <addr:port>`          | `0.0.0.0:3000` | Address and port the HTTP server listens on.                                                                                                                                      |
+| `--discovery-timeout-ms <ms>` | `3000`         | How long UDP discovery waits for a console response.                                                                                                                              |
+| `--timeout <seconds>`         | off            | Shut down after N seconds (mainly for tests).                                                                                                                                     |
+| `--automation-tick-secs <s>`  | `60`           | How often the automation engine evaluates its programs. `0` disables it.                                                                                                          |
+| `--automation-config <path>`  | XDG config dir | File the automation enable/parameter settings are saved to and loaded from. Defaults to `$XDG_CONFIG_HOME/airtouch5-controller-webui/automation.json` (typically `~/.config/airtouch5-controller-webui/automation.json`). |
 
-Logging is environment-driven. Set the tracing filter with `AIRTOUCH5_CONTROLLER_WEBUI_LOG` or
-`RUST_LOG`; the default is `airtouch5_controller_webui=info,tower_http=info`. Control actions (every
+Logging is the one env-driven option. Set the tracing filter with `RUST_LOG`;
+the default is `airtouch5_controller_webui=info,tower_http=info`. Control actions (every
 `POST`) are logged at `info` with the client IP, the action, the response
 status, and elapsed time; page, partial, SSE, and asset requests are logged at
 `debug`.
@@ -93,7 +93,7 @@ status, and elapsed time; page, partial, SSE, and asset requests are logged at
 
 `airtouch5-controller-webui-mock` serves the same UI against a built-in mock controller that starts
 with a representative one-AC / six-zone setup (mirroring the static mockup). It
-shares `--bind` / `AIRTOUCH5_CONTROLLER_WEBUI_LISTEN` and `--timeout` with `airtouch5-controller-webui` but has no
+shares `--bind` and `--timeout` with `airtouch5-controller-webui` but has no
 discovery timeout (there is no console to discover). Use it to try the
 interface, demo it, or develop UI changes without hardware.
 

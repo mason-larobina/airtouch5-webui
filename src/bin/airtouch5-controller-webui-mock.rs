@@ -5,8 +5,7 @@
 //! discovering a real console. Handy for manual UI development in a browser
 //! without hardware, and for integration tests.
 //!
-//! `--bind` falls back to the AIRTOUCH5_CONTROLLER_WEBUI_LISTEN env var; `--timeout` arms an
-//! auto-shutdown deadline.
+//! `--timeout` arms an auto-shutdown deadline; logging is env-driven (`RUST_LOG`).
 
 use std::path::PathBuf;
 use std::time::Duration;
@@ -25,7 +24,7 @@ use airtouch5_controller_webui::{mock, serve};
 )]
 struct Cli {
     /// Address/port to bind the HTTP server (e.g. 127.0.0.1:3000).
-    #[arg(long, env = "AIRTOUCH5_CONTROLLER_WEBUI_LISTEN", default_value = "0.0.0.0:3000")]
+    #[arg(long, default_value = "0.0.0.0:3000")]
     bind: std::net::SocketAddr,
 
     /// Shut the server down after this many seconds (mainly for tests; off by default).
@@ -34,13 +33,13 @@ struct Cli {
 
     /// Automation engine evaluation tick, in seconds. Set to 0 to disable the
     /// engine entirely. Default 60 (once per minute).
-    #[arg(long, env = "AIRTOUCH5_CONTROLLER_WEBUI_AUTOMATION_TICK_SECS", default_value = "60")]
+    #[arg(long, default_value = "60")]
     automation_tick_secs: u64,
 
     /// Path to the automation config file (enable/disable + parameters).
     /// Created/updated on change; loaded on startup. When unset, defaults to
     /// `$XDG_CONFIG_HOME/airtouch5-controller-webui/automation.json` (~/.config/airtouch5-controller-webui/...).
-    #[arg(long, env = "AIRTOUCH5_CONTROLLER_WEBUI_AUTOMATION_CONFIG")]
+    #[arg(long)]
     automation_config: Option<PathBuf>,
 }
 
@@ -48,7 +47,8 @@ struct Cli {
 async fn main() {
     let cli = Cli::parse();
 
-    // Tracing init (env-driven: RUST_LOG, then AIRTOUCH5_CONTROLLER_WEBUI_LOG, then the default).
+    // Tracing init. Logging is the one env-driven option: the tracing filter
+    // is read from RUST_LOG, falling back to a sensible default.
     let filter = tracing_subscriber::EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("airtouch5_controller_webui=info,tower_http=info"));
     tracing_subscriber::fmt()
