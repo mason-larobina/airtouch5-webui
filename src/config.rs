@@ -5,7 +5,19 @@
 //! binary's tracing init, not via clap.
 
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::time::Duration;
+
+/// The application's directory name, used under the XDG config dir.
+pub const APP_DIR: &str = "airtouch5-webui";
+
+/// The default state directory: `$XDG_CONFIG_HOME/airtouch5-webui` (typically
+/// `~/.config/airtouch5-webui`), where the automation and presets config files
+/// live. Returns `None` only if no home directory can be determined. Overridden
+/// by the `--state-dir` flag in both binaries.
+pub fn default_state_dir() -> Option<PathBuf> {
+    dirs::config_dir().map(|d| d.join(APP_DIR))
+}
 
 /// Configuration for the airtouch5-webui web server.
 #[derive(Clone, Debug)]

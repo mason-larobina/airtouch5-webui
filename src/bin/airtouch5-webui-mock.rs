@@ -13,6 +13,7 @@ use std::time::Duration;
 use clap::Parser;
 
 use airtouch5_webui::automation::{self, AutomationStore};
+use airtouch5_webui::config;
 use airtouch5_webui::scenes::{self, SceneStore};
 use airtouch5_webui::{mock, serve};
 
@@ -37,17 +38,12 @@ struct Cli {
     #[arg(long, default_value = "60")]
     automation_tick_secs: u64,
 
-    /// Path to the automation config file (enable/disable + parameters).
-    /// Created/updated on change; loaded on startup. When unset, defaults to
-    /// `$XDG_CONFIG_HOME/airtouch5-webui/automation.json` (~/.config/airtouch5-webui/...).
+    /// Directory holding the persisted state files (automation + presets
+    /// config). Files are found or created here on startup and updated on
+    /// change. When unset, defaults to `$XDG_CONFIG_HOME/airtouch5-webui`
+    /// (typically `~/.config/airtouch5-webui`).
     #[arg(long)]
-    automation_config: Option<PathBuf>,
-
-    /// Path to the presets config file (saved full-state captures).
-    /// Created/updated on change; loaded on startup. When unset, defaults to
-    /// `$XDG_CONFIG_HOME/airtouch5-webui/scenes.json` (~/.config/airtouch5-webui/...).
-    #[arg(long)]
-    scenes_config: Option<PathBuf>,
+    state_dir: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -68,14 +64,16 @@ async fn main() {
     // Spawn the mock controller with the sample (mockup-like) state.
     let (manager, _mock) = mock::spawn_mock_controller(mock::sample_snapshot());
 
-    // Load automation config + spawn the engine. Defaults to the XDG config
-    // path (so the mock UI persists toggles just like the real binary); use
-    // --automation-config to override.
-    let automation = AutomationStore::load(
-        cli.automation_config
-            .or_else(automation::default_config_path)
-            .unwrap_or_else(|| PathBuf::from("automation.json")),
-    );
+    // Resolve the state directory (--state-dir, else the XDG default, else the
+    // current directory) that holds the persisted config files. Defaults match
+    // the real binary so the mock UI persists toggles/presets the same way.
+    let state_dir = cli
+        .state_dir
+        .or_else(config::default_state_dir)
+        .unwrap_or_else(|| PathBuf::from("."));
+
+    // Load automation config from the state dir + spawn the engine.
+    let automation = AutomationStore::load(state_dir.join(automation::CONFIG_FILE_NAME));
     if cli.automation_tick_secs > 0 {
         automation::spawn_automation(
             manager.clone(),
@@ -84,13 +82,8 @@ async fn main() {
         );
     }
 
-    // Load the shared presets store (defaults to the XDG path so the mock UI
-    // persists presets like the real binary; use --scenes-config to override).
-    let scenes = SceneStore::load(
-        cli.scenes_config
-            .or_else(scenes::default_config_path)
-            .unwrap_or_else(|| PathBuf::from("scenes.json")),
-    );
+    // Load the shared presets store from the state dir.
+    let scenes = SceneStore::load(state_dir.join(scenes::CONFIG_FILE_NAME));
 
     serve(
         manager,

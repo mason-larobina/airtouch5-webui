@@ -79,7 +79,7 @@ device on the same network).
 | `--discovery-timeout-ms <ms>` | `3000`         | How long UDP discovery waits for a console response.                                                                                                                                                |
 | `--timeout <seconds>`         | off            | Shut down after N seconds (mainly for tests).                                                                                                                                                       |
 | `--automation-tick-secs <s>`  | `60`           | How often the automation engine evaluates its programs. `0` disables it.                                                                                                                            |
-| `--automation-config <path>`  | XDG config dir | File the automation enable/parameter settings are saved to and loaded from. Defaults to `$XDG_CONFIG_HOME/airtouch5-webui/automation.json` (typically `~/.config/airtouch5-webui/automation.json`). |
+| `--state-dir <dir>`           | XDG config dir | Directory holding the persisted state files (`automation.json` and `scenes.json`). Files are found or created here on startup. Defaults to `$XDG_CONFIG_HOME/airtouch5-webui` (typically `~/.config/airtouch5-webui`). |
 
 Logging is the one env-driven option. Set the tracing filter with `RUST_LOG`;
 the default is `airtouch5_webui=info,tower_http=info`. Control actions (every
@@ -166,8 +166,8 @@ left untouched.
   keep the idle timer alive.
 
 Both programs are disabled by default. Enable them and pick presets in the UI;
-settings are saved to the `--automation-config` file (defaulting to the XDG
-config dir, e.g. `~/.config/airtouch5-webui/automation.json`)
+settings are saved to `automation.json` in the `--state-dir` (defaulting to the
+XDG config dir, e.g. `~/.config/airtouch5-webui/automation.json`)
 and reloaded on startup. Away/Sleep AC states are never touched -- only ACs
 that are `On` get turned off.
 

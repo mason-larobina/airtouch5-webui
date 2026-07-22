@@ -21,13 +21,9 @@ use std::sync::{Arc, RwLock};
 
 use crate::manager::snapshot::{Snapshot, fmt_temp, temp_to_f32};
 
-/// The XDG-based default config path:
-/// `$XDG_CONFIG_HOME/airtouch5-webui/scenes.json` (falling back to
-/// `~/.config/airtouch5-webui/scenes.json`). Returns `None` only if no home
-/// directory can be determined. Overridden by the `--scenes-config` flag.
-pub fn default_config_path() -> Option<PathBuf> {
-    dirs::config_dir().map(|d| d.join("airtouch5-webui").join("scenes.json"))
-}
+/// The filename for the presets config within the state directory
+/// (see [`crate::config::default_state_dir`]).
+pub const CONFIG_FILE_NAME: &str = "scenes.json";
 
 /// The persisted list of presets.
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]

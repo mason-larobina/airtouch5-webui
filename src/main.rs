@@ -11,8 +11,9 @@ use std::time::Duration;
 use clap::Parser;
 
 use airtouch5_webui::automation::{self, AutomationStore};
+use airtouch5_webui::config::{self, Config};
 use airtouch5_webui::scenes::{self, SceneStore};
-use airtouch5_webui::{config::Config, manager::spawn_manager, serve};
+use airtouch5_webui::{manager::spawn_manager, serve};
 
 /// airtouch5-webui: AirTouch 5 web UI.
 #[derive(Parser, Debug)]
@@ -35,17 +36,12 @@ struct Cli {
     #[arg(long, default_value = "60")]
     automation_tick_secs: u64,
 
-    /// Path to the automation config file (enable/disable + parameters).
-    /// Created/updated on change; loaded on startup. When unset, defaults to
-    /// `$XDG_CONFIG_HOME/airtouch5-webui/automation.json` (~/.config/airtouch5-webui/...).
+    /// Directory holding the persisted state files (automation + presets
+    /// config). Files are found or created here on startup and updated on
+    /// change. When unset, defaults to `$XDG_CONFIG_HOME/airtouch5-webui`
+    /// (typically `~/.config/airtouch5-webui`).
     #[arg(long)]
-    automation_config: Option<PathBuf>,
-
-    /// Path to the presets config file (saved full-state captures).
-    /// Created/updated on change; loaded on startup. When unset, defaults to
-    /// `$XDG_CONFIG_HOME/airtouch5-webui/scenes.json` (~/.config/airtouch5-webui/...).
-    #[arg(long)]
-    scenes_config: Option<PathBuf>,
+    state_dir: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -72,14 +68,16 @@ async fn main() {
     // Spawn the connection manager (discovers + connects in the background).
     let manager = spawn_manager((*config).clone()).await;
 
-    // Load the shared automation config (persisted to an XDG path by default,
-    // or the --automation-config flag override) and spawn the background engine
-    // that evaluates the enabled programs on a tick.
-    let automation = AutomationStore::load(
-        cli.automation_config
-            .or_else(automation::default_config_path)
-            .unwrap_or_else(|| PathBuf::from("automation.json")),
-    );
+    // Resolve the state directory (--state-dir, else the XDG default, else the
+    // current directory) that holds the persisted config files.
+    let state_dir = cli
+        .state_dir
+        .or_else(config::default_state_dir)
+        .unwrap_or_else(|| PathBuf::from("."));
+
+    // Load the shared automation config from the state dir and spawn the
+    // background engine that evaluates the enabled programs on a tick.
+    let automation = AutomationStore::load(state_dir.join(automation::CONFIG_FILE_NAME));
     if cli.automation_tick_secs > 0 {
         automation::spawn_automation(
             manager.clone(),
@@ -88,13 +86,8 @@ async fn main() {
         );
     }
 
-    // Load the shared presets store (persisted to an XDG path by default, or
-    // the --scenes-config flag override).
-    let scenes = SceneStore::load(
-        cli.scenes_config
-            .or_else(scenes::default_config_path)
-            .unwrap_or_else(|| PathBuf::from("scenes.json")),
-    );
+    // Load the shared presets store from the state dir.
+    let scenes = SceneStore::load(state_dir.join(scenes::CONFIG_FILE_NAME));
 
     serve(
         manager,

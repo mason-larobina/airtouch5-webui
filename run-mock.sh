@@ -3,9 +3,9 @@
 # run-mock.sh - Run the mock AirTouch 5 web UI for local development.
 #
 # Builds and launches the `airtouch5-webui-mock` binary against the in-memory
-# mock controller (no console/hardware needed), pointing the automation and
-# presets config files at a throwaway /tmp directory so a dev run never
-# touches your real ~/.config/airtouch5-webui state.
+# mock controller (no console/hardware needed), pointing the state directory
+# at a throwaway /tmp directory so a dev run never touches your real
+# ~/.config/airtouch5-webui state.
 #
 # Usage:
 #   ./run-mock.sh                # serve on 127.0.0.1:3000
@@ -37,6 +37,5 @@ echo "run-mock: bind=$bind config_dir=$config_dir"
 
 exec cargo run --bin airtouch5-webui-mock -- \
   --bind "$bind" \
-  --automation-config "$config_dir/automation.json" \
-  --scenes-config "$config_dir/scenes.json" \
+  --state-dir "$config_dir" \
   "$@"

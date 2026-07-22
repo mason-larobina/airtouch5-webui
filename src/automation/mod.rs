@@ -61,13 +61,9 @@ pub const DEFAULT_SETPOINT_HOLD: Duration = Duration::from_secs(15 * 60);
 /// Default idle auto-off timeout.
 pub const DEFAULT_IDLE_TIMEOUT: Duration = Duration::from_secs(30 * 60);
 
-/// The XDG-based default config path: `$XDG_CONFIG_HOME/airtouch5-webui/automation.json`
-/// (falling back to `~/.config/airtouch5-webui/automation.json` when `XDG_CONFIG_HOME`
-/// is unset). Returns `None` only if no home directory can be determined.
-/// Overridden by the `--automation-config` flag in both binaries.
-pub fn default_config_path() -> Option<PathBuf> {
-    dirs::config_dir().map(|d| d.join("airtouch5-webui").join("automation.json"))
-}
+/// The filename for the automation config within the state directory
+/// (see [`crate::config::default_state_dir`]).
+pub const CONFIG_FILE_NAME: &str = "automation.json";
 
 /// Configuration for the two automation programs. Persisted as JSON when the
 /// store has a path (see [`AutomationStore::load`]).
