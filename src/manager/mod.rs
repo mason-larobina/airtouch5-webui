@@ -108,6 +108,18 @@ async fn run_connected(
         .subscribe_status()
         .ok_or_else(|| tracing::error!("subscribe_status returned None"))?;
 
+    // Connection-liveness signal. When the airtouch5 IO loop dies (e.g. the
+    // console resets the socket) it drops the only strong `broadcast::Sender`,
+    // so this receiver's `recv()` returns `Closed`. We rely on this rather than
+    // `status_rx.changed()` because the handle keeps a *clone* of the status
+    // watch sender alive, so `changed()` blocks forever after a disconnect and
+    // never reports the loss. We only use this channel as a liveness signal --
+    // the payload is redundant with the status watch, which rebuilds the
+    // snapshot.
+    let mut changes_rx = at5
+        .subscribe_changes()
+        .ok_or_else(|| tracing::error!("subscribe_changes returned None"))?;
+
     // A read-only clone handed to command handlers so they can `borrow()` the
     // current status. `borrow()` returns the latest value regardless of the
     // receiver's seen-version, so this clone's version being frozen at
@@ -148,6 +160,23 @@ async fn run_connected(
                     }
                     Err(_) => {
                         tracing::warn!("status watch closed; connection lost");
+                        return Err(());
+                    }
+                }
+            }
+
+            // Connection died: the IO loop dropped its broadcast sender.
+            // `changed()` above can't see this (the handle holds a clone of the
+            // watch sender), so this is the arm that actually catches a reset
+            // socket and triggers a reconnect.
+            res = changes_rx.recv() => {
+                match res {
+                    Ok(_) => {} // Redundant with the status watch; ignore payload.
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
+                        tracing::warn!("status change stream lagged by {n}; continuing");
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                        tracing::warn!("status change stream closed; connection lost");
                         return Err(());
                     }
                 }
